@@ -20,4 +20,3 @@ await admin.from('fittt_ai_usage').update({input_tokens:input,output_tokens:outp
 const result=JSON.parse(data.choices[0].message.content);return json(b.ask?result:{estimate:result});
 }catch{return json({error:'Interpretation unavailable. Try Fast Mode.'},400);}
 });
-
