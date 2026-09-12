@@ -24,16 +24,17 @@ Only FITTT-prefixed database objects and `fittt_private` were changed. Edge func
 
 Latest run: 12 September 2026, approximately 07:19 UTC.
 
-Security: no FITTT object findings. Shared-project findings are 22 informational Kaspr tables with RLS and no policies (default deny) and one warning for disabled leaked-password protection. Existing Kaspr policies and shared Auth settings were preserved. Password-warning guidance: https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
+Security: no FITTT object findings. Shared-project findings are 22 informational Kaspr tables with RLS and no policies (default deny) and one warning for disabled leaked-password protection. Existing Kaspr policies were preserved; the explicitly approved shared Auth email and callback changes are recorded below. Password-warning guidance: https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
 
 Performance: 23 pre-existing unindexed foreign-key notices, 16 unused-index notices (three for new FITTT indexes), and one shared Auth connection-allocation notice. Retain new FITTT indexes for growing workloads; there are no FITTT unindexed foreign-key findings. Guidance: https://supabase.com/docs/guides/database/database-linter and https://supabase.com/docs/guides/deployment/going-into-prod
 
-## Remaining external setup
+## Production authentication completed
 
-Production email signup is not yet verified end to end. The automated tests used disposable preconfirmed users and authenticated sessions; they do not establish email delivery or successful magic-link signup.
+The automated tests used disposable preconfirmed users. Separately, actual production email signup was verified on 12 September 2026 with the owner's explicitly approved email address: FITTT submitted signup, Resend reported Delivered, the delivered confirmation link exchanged through the production callback, and FITTT displayed its authenticated onboarding form. No invented body measurements were saved to the owner's account.
 
 1. Completed after explicit user approval: added `https://fittt-production.up.railway.app/auth/callback` to the shared Supabase redirect allowlist and verified it in the dashboard. Kaspr's existing site URL was preserved.
-2. Configure a verified production email sender. Supabase currently uses its restricted built-in mailer. Resend is signed out in the connected browser; sender verification/configuration remains pending. Shared SMTP must preserve existing Kaspr email behavior.
-3. After those changes, verify actual email signup and callback with pilot accounts.
+2. After specific user approval, created the Resend key `FITTT Supabase Auth`, with Sending access restricted to the verified `kaspr.com.au` domain. Stored it only in Supabase's encrypted SMTP configuration. Existing Resend and Railway application keys were not changed.
+3. Enabled shared SMTP with `smtp.resend.com`, port 465, username `resend`, sender `Kaspr Accounts <noreply@kaspr.com.au>`, and a 60-second per-user interval. Supabase's UI sets 30 authentication emails/hour on activation. This shared sender applies to both FITTT and Kaspr Auth; existing templates and site URL were preserved.
+4. Verified delivery record `5b15be21-4c4e-437c-8c0e-c252c31a315a`, correct sender and FITTT callback, and successful authenticated onboarding. No external setup blocker remains. The owner can enter their own personal onboarding details.
 
 The Railway service uses its configured Dockerfile, port 3000 and `/api/health`; `railway.json` is a reference because this service uses Railway's current dashboard configuration.

@@ -62,4 +62,6 @@ The security/performance advisor is project-wide. Existing Kaspr findings must b
 
 ## Authentication setup
 
-Allow exactly `https://fittt-production.up.railway.app/auth/callback` as an additional Supabase redirect. Preserve Kaspr's site URL and other redirects. The app requests magic links with PKCE and exchanges the callback code using SSR cookies. Email OTP is available when the configured template supplies a code. Verify email delivery with the actual three pilot users; Supabase's default mail service has recipient/rate restrictions unless custom SMTP is configured.
+Production allows exactly `https://fittt-production.up.railway.app/auth/callback` as an additional Supabase redirect. Kaspr's site URL and existing templates are preserved. The app requests magic links with PKCE and exchanges the callback code using SSR cookies. Email OTP is available when the configured template supplies a code.
+
+Shared Auth SMTP uses Resend at `smtp.resend.com:465`, username `resend`, and `Kaspr Accounts <noreply@kaspr.com.au>`. Its encrypted key has sending-only access restricted to `kaspr.com.au`; it is not in this repository or the app environment. This sender applies to FITTT and Kaspr authentication emails. Current limits are 30 auth emails/hour and a 60-second per-user interval. Actual email delivery and signup through the callback into onboarding were verified; see `VERIFICATION.md`.
