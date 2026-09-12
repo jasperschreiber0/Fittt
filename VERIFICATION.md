@@ -1,5 +1,13 @@
 # Production verification — 12 September 2026
 
+## Login regression corrected
+
+After the owner reported a loop, inspection found a code-entry UI paired with link-only emails and a PKCE callback whose failure was not surfaced. Earlier verification covered a same-browser signup link, which did not cover this returning-user/cross-browser problem.
+
+Application fix `ebeb32e` deployed successfully. Signup and returning-user email templates now send an explicit code only for the exact FITTT callback destination, preserving the original Kaspr fallback body and subject. Login UI now retains the pending email across refreshes, offers resend/change-email, validates codes and displays recovery for legacy callback failures.
+
+Validation: lint, typecheck, 13 unit tests, production build, and three new login browser regressions passed locally and in production. A real code email was Delivered (record `ff0f85f9-6cdd-414d-bbee-4b1d1e8b389f`). The delivered eight-digit code authenticated in a separate browser context with no original PKCE cookie, returned an authenticated API response, opened the existing plan and remained authenticated after reload. No private profile values were changed. The test code was consumed; users should request a new code rather than reuse test emails.
+
 Live service: https://fittt-production.up.railway.app
 
 Application commit tested: `6258b499554c9b59650d9adda08f6ad1b574d019`. Railway deployment `85dc1206-1354-4113-b435-48ad179d2d48` reached SUCCESS. Subsequent documentation-only commits do not change the tested application behavior.
