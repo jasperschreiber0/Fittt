@@ -1,5 +1,11 @@
 # Production verification — 12 September 2026
 
+## Phone logging update — 13 September 2026
+
+Today now leads with the logging composer, before adherence and Sunday review. Browser dictation requests continuous interim results, renders words during speech, replaces evolving hypotheses without duplication, and appends new recording sessions to the draft. Listening has a visible status and stop control; the app does not claim microphone activity until the browser start event. Review is disabled during capture. Draft/not-saved messaging distinguishes capture from confirmation. Unsupported or denied microphones retain typed text and offer keyboard dictation.
+
+Phone refinements include 16px minimum form text, larger capture controls, safe-area spacing, narrow-screen forms and navigation, and scrolling the transcript into view when listening starts. Five browser regressions passed (three login, two simulated-speech/mobile tests), plus lint, typecheck, 13 unit tests and production build. Screenshots were inspected at phone size; layouts were checked for overflow at 320px and 390px. Speech tests simulate browser recognition events, not physical microphone audio or every iOS/Android recognition provider.
+
 ## Login regression corrected
 
 After the owner reported a loop, inspection found a code-entry UI paired with link-only emails and a PKCE callback whose failure was not surfaced. Earlier verification covered a same-browser signup link, which did not cover this returning-user/cross-browser problem.

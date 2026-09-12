@@ -236,6 +236,73 @@ p {
   margin: 6px 0 16px;
   padding: 18px;
 }
+.voice-composer {
+  margin: 18px 0 12px;
+  scroll-margin-top: 16px;
+}
+.voice-composer .voice {
+  margin-bottom: 12px;
+  min-height: 64px;
+}
+.voice-composer.is-listening {
+  background: #f0f5df;
+  border: 1px solid #bccd8f;
+  border-radius: 16px;
+  padding: 14px;
+}
+.voice-composer.is-listening .voice {
+  background: var(--ink);
+  color: white;
+}
+.capture-status {
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 44px;
+  color: #49634e;
+  margin-bottom: 14px;
+}
+.listening-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #467b39;
+  margin-right: 9px;
+  animation: listening-pulse 1.5s ease-in-out infinite;
+}
+@keyframes listening-pulse {
+  50% {
+    box-shadow: 0 0 0 5px #467b391c;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .listening-dot {
+    animation: none;
+  }
+}
+.draft-label {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.draft-label span {
+  font-size: 11px;
+  font-weight: 400;
+  color: #6a786b;
+}
+.voice-composer textarea {
+  min-height: 132px;
+  font-size: 17px;
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+.voice-composer .text-button {
+  min-height: 44px;
+}
 .primary {
   width: 100%;
 }
@@ -618,6 +685,36 @@ button:hover:not(:disabled) {
   filter: brightness(0.96);
 }
 @media (max-width: 600px) {
+  input:not([type="checkbox"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+  .log-card {
+    scroll-margin-top: 12px;
+  }
+  .log-card > .between {
+    flex-wrap: wrap;
+  }
+  .log-card > .between .tag {
+    display: none;
+  }
+  .voice-composer.is-listening {
+    padding: 10px;
+  }
+  .voice-composer .voice {
+    font-size: 18px;
+  }
+  .auth form {
+    max-width: none;
+  }
+  .modal {
+    padding: 12px;
+  }
+  .modal > .card {
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+  }
   header {
     height: 76px;
     padding: 0 22px;
@@ -629,7 +726,7 @@ button:hover:not(:disabled) {
     display: none;
   }
   main {
-    padding: 30px 19px 115px;
+    padding: 20px 16px calc(115px + env(safe-area-inset-bottom));
   }
   h1 {
     font-size: 34px;
@@ -715,9 +812,23 @@ button:hover:not(:disabled) {
     padding: 7px 3px;
   }
   nav button {
-    min-width: 52px;
+    min-width: 0;
+    flex: 1;
+    min-height: 48px;
   }
   .entry > .text-button {
     padding-top: 4px;
+  }
+}
+@media (max-width: 360px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .page-title h1 {
+    font-size: 29px;
+  }
+  .day-dot {
+    width: 29px;
+    height: 29px;
   }
 }

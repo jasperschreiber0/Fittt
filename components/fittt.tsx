@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { VoiceComposer } from "./voice-composer";
 import {
   Mic,
   ArrowUpRight,
@@ -148,6 +149,7 @@ export default function Fittt() {
     [email, setEmail] = useState(""),
     [sent, setSent] = useState(false),
     [token, setToken] = useState("");
+  const [dayListening, setDayListening] = useState(false);
   const [resendAfter, setResendAfter] = useState(0);
   const [authClock, setAuthClock] = useState(0);
   const [text, setText] = useState(""),
@@ -536,6 +538,334 @@ export default function Fittt() {
                 <div className="page-title">
                   <div>
                     <div className="eyebrow">
+                      <section className="card log-card">
+                        <div className="between">
+                          <h2>Just tell us about your day.</h2>
+                          <span className="tag">YOUR DAILY CHECK-IN</span>
+                        </div>
+                        <p>
+                          Meals, movement, a drink with mates. Tell it like it
+                          was.
+                        </p>
+                        <VoiceComposer
+                          value={text}
+                          disabled={busy}
+                          onActive={setDayListening}
+                          onStart={() => {
+                            setStarted(performance.now());
+                            analytics("voice_start");
+                          }}
+                          onChange={(value, source) => {
+                            setText(value);
+                            setInputSource(source);
+                            setEstimate(null);
+                            setQuestion("");
+                            setClarified(false);
+                          }}
+                        />
+                        {question && (
+                          <Field label={question}>
+                            <input
+                              value={answer}
+                              onChange={(e) => setAnswer(e.target.value)}
+                              placeholder="One quick detail…"
+                            />
+                          </Field>
+                        )}
+                        {estimate && !question ? (
+                          <div className="estimate">
+                            <div className="between">
+                              <h3>Your estimate</h3>
+                              <span className="tag">
+                                {estimate.confidence} confidence
+                              </span>
+                            </div>
+                            <strong>
+                              {range(
+                                mergeEntries([
+                                  {
+                                    id: "preview",
+                                    day: today,
+                                    estimate,
+                                    source: "text",
+                                  },
+                                ]).caloriesLow,
+                                mergeEntries([
+                                  {
+                                    id: "preview",
+                                    day: today,
+                                    estimate,
+                                    source: "text",
+                                  },
+                                ]).caloriesHigh,
+                              )}{" "}
+                              kcal
+                            </strong>
+                            <p>
+                              {[...estimate.foods, ...estimate.drinks]
+                                .map((i) => i.name)
+                                .join(" · ") || "Movement update"}
+                            </p>
+                            <p>
+                              {range(
+                                [...estimate.foods, ...estimate.drinks].reduce(
+                                  (s, i) => s + i.proteinLow,
+                                  0,
+                                ),
+                                [...estimate.foods, ...estimate.drinks].reduce(
+                                  (s, i) => s + i.proteinHigh,
+                                  0,
+                                ),
+                              )}{" "}
+                              g protein ·{" "}
+                              {[...estimate.drinks, ...estimate.foods]
+                                .reduce((s, i) => s + i.standardDrinks, 0)
+                                .toFixed(1)}{" "}
+                              standard drinks
+                            </p>
+                            {estimate.assumptions.map((a) => (
+                              <p className="small" key={a}>
+                                {a}
+                              </p>
+                            ))}
+                            {estimate.safetyConcern && <p>{safeMessage}</p>}
+                            {adjust && (
+                              <>
+                                {[...estimate.foods, ...estimate.drinks].map(
+                                  (item, i) => (
+                                    <div className="adjust" key={i}>
+                                      <b>{item.name}</b>
+                                      {(
+                                        [
+                                          "caloriesLow",
+                                          "caloriesHigh",
+                                          "proteinLow",
+                                          "proteinHigh",
+                                          "standardDrinks",
+                                        ] as const
+                                      ).map((k) => (
+                                        <Field key={k} label={k}>
+                                          <input
+                                            type="number"
+                                            min="0"
+                                            value={item[k]}
+                                            onChange={(e) => {
+                                              const copy =
+                                                structuredClone(estimate);
+                                              const list =
+                                                i < copy.foods.length
+                                                  ? copy.foods
+                                                  : copy.drinks;
+                                              list[
+                                                i < copy.foods.length
+                                                  ? i
+                                                  : i - copy.foods.length
+                                              ][k] = Number(e.target.value);
+                                              setEstimate(copy);
+                                            }}
+                                          />
+                                        </Field>
+                                      ))}
+                                    </div>
+                                  ),
+                                )}
+                              </>
+                            )}
+                            <label className="check">
+                              <input
+                                type="checkbox"
+                                checked={estimate.completeDay}
+                                onChange={(e) =>
+                                  setEstimate({
+                                    ...estimate,
+                                    completeDay: e.target.checked,
+                                  })
+                                }
+                              />
+                              This includes everything I ate today
+                            </label>
+                            <div className="actions">
+                              <button
+                                className="primary"
+                                disabled={busy}
+                                onClick={() => void run(confirmEstimate)}
+                              >
+                                Looks right <Check size={17} />
+                              </button>
+                              <button
+                                className="secondary"
+                                onClick={() => {
+                                  setAdjust(!adjust);
+                                  analytics("estimate_adjust");
+                                }}
+                              >
+                                Adjust
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            className="primary"
+                            disabled={
+                              busy ||
+                              dayListening ||
+                              !text.trim() ||
+                              (!!question && !answer)
+                            }
+                            onClick={() => void run(() => interpret(false))}
+                          >
+                            {busy
+                              ? "Making sense of it…"
+                              : question
+                                ? "Use this detail"
+                                : "Review my day"}
+                            <ArrowUpRight size={17} />
+                          </button>
+                        )}
+                        <button
+                          className="text-button"
+                          onClick={() => {
+                            setFastOpen(!fastOpen);
+                            setStarted(performance.now());
+                            analytics("fast_start");
+                          }}
+                        >
+                          Short on time? Fast Mode <ChevronRight size={16} />
+                        </button>
+                        {fastOpen && (
+                          <div className="fast">
+                            <Choices
+                              label="Food"
+                              value={fast.food}
+                              options={[
+                                ["on", "On plan"],
+                                ["off", "Off plan"],
+                              ]}
+                              onChange={(s) =>
+                                setFast({ ...fast, food: s as Fast["food"] })
+                              }
+                            />
+                            <Choices
+                              label="Training"
+                              value={fast.training}
+                              options={[
+                                ["done", "Done"],
+                                ["rest", "Rest"],
+                                ["missed", "Missed"],
+                              ]}
+                              onChange={(s) =>
+                                setFast({
+                                  ...fast,
+                                  training: s as Fast["training"],
+                                })
+                              }
+                            />
+                            <Choices
+                              label="Alcohol"
+                              value={fast.alcohol}
+                              options={[
+                                ["none", "None"],
+                                ["planned", "Planned"],
+                                ["unplanned", "Unplanned"],
+                              ]}
+                              onChange={(s) =>
+                                setFast({
+                                  ...fast,
+                                  alcohol: s as Fast["alcohol"],
+                                })
+                              }
+                            />
+                            <button
+                              className="primary"
+                              disabled={busy}
+                              onClick={() =>
+                                void run(async () => {
+                                  await api({
+                                    action: "day",
+                                    day: today,
+                                    data: fast,
+                                  });
+                                  analytics("checkin");
+                                  await reload();
+                                  setFastOpen(false);
+                                  setNotice(
+                                    "Check-in saved. Back to your life.",
+                                  );
+                                })
+                              }
+                            >
+                              Save check-in <Check size={18} />
+                            </button>
+                            <p className="small">
+                              Rest counts. More exercise earns no extra points.
+                              Fast Mode doesn’t invent calorie estimates.
+                            </p>
+                          </div>
+                        )}
+                      </section>
+                      <section className="status-card">
+                        <div className="between">
+                          <span className="pill">
+                            {challenge
+                              ? `DAY ${challengeDay} / 90`
+                              : "YOUR DAILY RHYTHM"}
+                          </span>
+                          <span className="small">
+                            {challenge?.name || "One day at a time"}
+                          </span>
+                        </div>
+                        <h2>
+                          {gold
+                            ? "Life is on the plan."
+                            : day
+                              ? "You showed up. That counts."
+                              : "A good day starts with a check-in."}
+                        </h2>
+                        <p>
+                          {gold
+                            ? "Enjoy your Gold Event. Keep normal meals and log it afterwards."
+                            : day
+                              ? "Consistency over perfection. There’s always another good choice."
+                              : "No perfect meals. No perfect numbers. Just a little consistency."}
+                        </p>
+                        <div className="week-strip">
+                          {days.map((d) => {
+                            const saved = data.days.find((x) => x.day === d),
+                              g = data.events.some((e) => e.day === d),
+                              status = saved
+                                ? dayScore(
+                                    saved.data,
+                                    data.entries.filter((e) => e.day === d),
+                                    p,
+                                    g,
+                                  ).status
+                                : "";
+                            return (
+                              <div key={d}>
+                                <span>
+                                  {new Date(
+                                    d + "T12:00:00Z",
+                                  ).toLocaleDateString("en", {
+                                    weekday: "narrow",
+                                    timeZone: "UTC",
+                                  })}
+                                </span>
+                                <span
+                                  className={`day-dot ${d === today ? "current" : ""} ${status === "Green" ? "green" : g ? "gold" : ""}`}
+                                >
+                                  {saved ? (
+                                    <Check size={17} />
+                                  ) : g ? (
+                                    <Sparkles size={15} />
+                                  ) : (
+                                    d.slice(-2)
+                                  )}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </section>
                       {new Date(today + "T12:00:00").toLocaleDateString(
                         "en-AU",
                         { weekday: "long", day: "numeric", month: "long" },
@@ -548,67 +878,6 @@ export default function Fittt() {
                   </div>
                   <Sun className="sun" size={46} strokeWidth={1.1} />
                 </div>
-                <section className="status-card">
-                  <div className="between">
-                    <span className="pill">
-                      {challenge
-                        ? `DAY ${challengeDay} / 90`
-                        : "YOUR DAILY RHYTHM"}
-                    </span>
-                    <span className="small">
-                      {challenge?.name || "One day at a time"}
-                    </span>
-                  </div>
-                  <h2>
-                    {gold
-                      ? "Life is on the plan."
-                      : day
-                        ? "You showed up. That counts."
-                        : "A good day starts with a check-in."}
-                  </h2>
-                  <p>
-                    {gold
-                      ? "Enjoy your Gold Event. Keep normal meals and log it afterwards."
-                      : day
-                        ? "Consistency over perfection. There’s always another good choice."
-                        : "No perfect meals. No perfect numbers. Just a little consistency."}
-                  </p>
-                  <div className="week-strip">
-                    {days.map((d) => {
-                      const saved = data.days.find((x) => x.day === d),
-                        g = data.events.some((e) => e.day === d),
-                        status = saved
-                          ? dayScore(
-                              saved.data,
-                              data.entries.filter((e) => e.day === d),
-                              p,
-                              g,
-                            ).status
-                          : "";
-                      return (
-                        <div key={d}>
-                          <span>
-                            {new Date(d + "T12:00:00Z").toLocaleDateString(
-                              "en",
-                              { weekday: "narrow", timeZone: "UTC" },
-                            )}
-                          </span>
-                          <span
-                            className={`day-dot ${d === today ? "current" : ""} ${status === "Green" ? "green" : g ? "gold" : ""}`}
-                          >
-                            {saved ? (
-                              <Check size={17} />
-                            ) : g ? (
-                              <Sparkles size={15} />
-                            ) : (
-                              d.slice(-2)
-                            )}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
                 {new Date(today + "T12:00:00Z").getUTCDay() === 0 && (
                   <button
                     className="notice"
@@ -621,263 +890,6 @@ export default function Fittt() {
                     Your Sunday reset is ready. Take a look →
                   </button>
                 )}
-                <section className="card log-card">
-                  <div className="between">
-                    <h2>A few words. Day logged.</h2>
-                    <span className="tag">VOICE + TEXT</span>
-                  </div>
-                  <p>
-                    Meals, movement, a drink with mates. Tell it like it was.
-                  </p>
-                  <button
-                    className="voice"
-                    disabled={busy || voice}
-                    onClick={(e) => {
-                      setStarted(e.timeStamp);
-                      speak(setText);
-                    }}
-                  >
-                    <Mic size={22} />
-                    {voice ? "Listening…" : "Log my day"}
-                  </button>
-                  <textarea
-                    aria-label="Describe your food, drinks and movement"
-                    placeholder="“Chicken wrap for lunch, gym done. Add two beers with dinner…”"
-                    value={text}
-                    onChange={(e) => {
-                      setInputSource("text");
-                      setText(e.target.value);
-                      setEstimate(null);
-                      setQuestion("");
-                      setClarified(false);
-                    }}
-                  />
-                  {question && (
-                    <Field label={question}>
-                      <input
-                        value={answer}
-                        onChange={(e) => setAnswer(e.target.value)}
-                        placeholder="One quick detail…"
-                      />
-                    </Field>
-                  )}
-                  {estimate && !question ? (
-                    <div className="estimate">
-                      <div className="between">
-                        <h3>Your estimate</h3>
-                        <span className="tag">
-                          {estimate.confidence} confidence
-                        </span>
-                      </div>
-                      <strong>
-                        {range(
-                          mergeEntries([
-                            {
-                              id: "preview",
-                              day: today,
-                              estimate,
-                              source: "text",
-                            },
-                          ]).caloriesLow,
-                          mergeEntries([
-                            {
-                              id: "preview",
-                              day: today,
-                              estimate,
-                              source: "text",
-                            },
-                          ]).caloriesHigh,
-                        )}{" "}
-                        kcal
-                      </strong>
-                      <p>
-                        {[...estimate.foods, ...estimate.drinks]
-                          .map((i) => i.name)
-                          .join(" · ") || "Movement update"}
-                      </p>
-                      <p>
-                        {range(
-                          [...estimate.foods, ...estimate.drinks].reduce(
-                            (s, i) => s + i.proteinLow,
-                            0,
-                          ),
-                          [...estimate.foods, ...estimate.drinks].reduce(
-                            (s, i) => s + i.proteinHigh,
-                            0,
-                          ),
-                        )}{" "}
-                        g protein ·{" "}
-                        {[...estimate.drinks, ...estimate.foods]
-                          .reduce((s, i) => s + i.standardDrinks, 0)
-                          .toFixed(1)}{" "}
-                        standard drinks
-                      </p>
-                      {estimate.assumptions.map((a) => (
-                        <p className="small" key={a}>
-                          {a}
-                        </p>
-                      ))}
-                      {estimate.safetyConcern && <p>{safeMessage}</p>}
-                      {adjust && (
-                        <>
-                          {[...estimate.foods, ...estimate.drinks].map(
-                            (item, i) => (
-                              <div className="adjust" key={i}>
-                                <b>{item.name}</b>
-                                {(
-                                  [
-                                    "caloriesLow",
-                                    "caloriesHigh",
-                                    "proteinLow",
-                                    "proteinHigh",
-                                    "standardDrinks",
-                                  ] as const
-                                ).map((k) => (
-                                  <Field key={k} label={k}>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      value={item[k]}
-                                      onChange={(e) => {
-                                        const copy = structuredClone(estimate);
-                                        const list =
-                                          i < copy.foods.length
-                                            ? copy.foods
-                                            : copy.drinks;
-                                        list[
-                                          i < copy.foods.length
-                                            ? i
-                                            : i - copy.foods.length
-                                        ][k] = Number(e.target.value);
-                                        setEstimate(copy);
-                                      }}
-                                    />
-                                  </Field>
-                                ))}
-                              </div>
-                            ),
-                          )}
-                        </>
-                      )}
-                      <label className="check">
-                        <input
-                          type="checkbox"
-                          checked={estimate.completeDay}
-                          onChange={(e) =>
-                            setEstimate({
-                              ...estimate,
-                              completeDay: e.target.checked,
-                            })
-                          }
-                        />
-                        This includes everything I ate today
-                      </label>
-                      <div className="actions">
-                        <button
-                          className="primary"
-                          disabled={busy}
-                          onClick={() => void run(confirmEstimate)}
-                        >
-                          Looks right <Check size={17} />
-                        </button>
-                        <button
-                          className="secondary"
-                          onClick={() => {
-                            setAdjust(!adjust);
-                            analytics("estimate_adjust");
-                          }}
-                        >
-                          Adjust
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      className="primary"
-                      disabled={busy || !text.trim() || (!!question && !answer)}
-                      onClick={() => void run(() => interpret(false))}
-                    >
-                      {busy
-                        ? "Making sense of it…"
-                        : question
-                          ? "Use this detail"
-                          : "Make sense of my day"}
-                      <ArrowUpRight size={17} />
-                    </button>
-                  )}
-                  <button
-                    className="text-button"
-                    onClick={() => {
-                      setFastOpen(!fastOpen);
-                      setStarted(performance.now());
-                      analytics("fast_start");
-                    }}
-                  >
-                    Short on time? Fast Mode <ChevronRight size={16} />
-                  </button>
-                  {fastOpen && (
-                    <div className="fast">
-                      <Choices
-                        label="Food"
-                        value={fast.food}
-                        options={[
-                          ["on", "On plan"],
-                          ["off", "Off plan"],
-                        ]}
-                        onChange={(s) =>
-                          setFast({ ...fast, food: s as Fast["food"] })
-                        }
-                      />
-                      <Choices
-                        label="Training"
-                        value={fast.training}
-                        options={[
-                          ["done", "Done"],
-                          ["rest", "Rest"],
-                          ["missed", "Missed"],
-                        ]}
-                        onChange={(s) =>
-                          setFast({ ...fast, training: s as Fast["training"] })
-                        }
-                      />
-                      <Choices
-                        label="Alcohol"
-                        value={fast.alcohol}
-                        options={[
-                          ["none", "None"],
-                          ["planned", "Planned"],
-                          ["unplanned", "Unplanned"],
-                        ]}
-                        onChange={(s) =>
-                          setFast({ ...fast, alcohol: s as Fast["alcohol"] })
-                        }
-                      />
-                      <button
-                        className="primary"
-                        disabled={busy}
-                        onClick={() =>
-                          void run(async () => {
-                            await api({
-                              action: "day",
-                              day: today,
-                              data: fast,
-                            });
-                            analytics("checkin");
-                            await reload();
-                            setFastOpen(false);
-                            setNotice("Check-in saved. Back to your life.");
-                          })
-                        }
-                      >
-                        Save check-in <Check size={18} />
-                      </button>
-                      <p className="small">
-                        Rest counts. More exercise earns no extra points. Fast
-                        Mode doesn’t invent calorie estimates.
-                      </p>
-                    </div>
-                  )}
-                </section>
                 <div className="grid">
                   <section className="card">
                     <div className="eyebrow">THIS WEEK · ESTIMATED</div>
@@ -1693,9 +1705,10 @@ export default function Fittt() {
                     <button
                       className="secondary"
                       onClick={() => speak(setFeedbackText)}
+                      disabled={voice}
                     >
                       <Mic size={18} />
-                      Speak
+                      {voice ? "Listening…" : "Speak"}
                     </button>
                     <button
                       className="primary"
