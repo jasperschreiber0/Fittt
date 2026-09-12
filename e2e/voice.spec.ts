@@ -65,6 +65,8 @@ test("phone dictation displays interim words, replaces hypotheses and appends an
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
+  await expect(page.getByRole("heading", {name: /Hey Alex/})).toBeVisible();
+  await expect(page.locator(".page-title .log-card")).toHaveCount(0);
   const draft = page.getByLabel("Describe your food, drinks and movement");
   await page.getByRole("button", { name: "Log my day", exact: true }).click();
   await expect(
