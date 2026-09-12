@@ -84,12 +84,16 @@ test("three user onboarding, challenge, invite, logs, Gold, privacy, progress", 
     ).toBeVisible();
     await page.getByRole("button", { name: "Events", exact: true }).click();
     const eventName = "Friends dinner " + crypto.randomUUID().slice(0, 6);
+    await page.getByRole("button", { name: "Next month", exact: true }).click();
+    await page.locator(".calendar-day").first().click();
+    await page.getByRole("button", { name: "Add an event" }).click();
     await page.getByLabel("Event name").fill(eventName);
-    await page
-      .getByLabel("Date", { exact: true })
-      .fill(new Date(Date.now() + 86400000).toISOString().slice(0, 10));
-    await page.getByRole("button", { name: "Add Gold Event" }).click();
-    await expect(page.getByRole("heading", { name: eventName })).toBeVisible();
+    await page.getByRole("button", { name: "Save event", exact: true }).click();
+    await expect(
+      page.getByText(
+        "Event saved to your calendar. A social life is part of the plan.",
+      ),
+    ).toBeVisible();
     await page.getByRole("button", { name: "Progress", exact: true }).click();
     await page.getByLabel("Weight (kg)", { exact: true }).fill(String(80 + i));
     await page.getByRole("button", { name: "Save", exact: true }).click();

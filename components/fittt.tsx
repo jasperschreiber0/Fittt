@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { VoiceComposer } from "./voice-composer";
+import { EventCalendar } from "./event-calendar";
 import {
   Mic,
   ArrowUpRight,
@@ -1417,98 +1418,37 @@ export default function Fittt() {
               </>
             )}
             {tab === "Events" && (
-              <>
-                <div className="eyebrow">INTENTIONAL FLEXIBILITY</div>
-                <h1>The good stuff belongs.</h1>
-                <section className="card gold-card">
-                  <Sparkles size={30} />
-                  <h2>A social life is part of the plan.</h2>
-                  <p>
-                    Plan it. Enjoy it. Log it. No starving beforehand, no
-                    punishment afterwards.
-                  </p>
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const f = new FormData(e.currentTarget);
-                      void run(async () => {
-                        await api({
-                          action: "event",
-                          name: f.get("name"),
-                          day: f.get("day"),
-                          size: f.get("size"),
-                        });
-                        analytics("gold_created");
-                        await reload();
-                        setNotice(
-                          "Gold Event planned. Keep your regular meals.",
-                        );
-                      });
-                    }}
-                  >
-                    <Field label="Event name">
-                      <input
-                        name="name"
-                        placeholder="Dinner with the crew"
-                        maxLength={80}
-                        required
-                      />
-                    </Field>
-                    <div className="form-grid">
-                      <Field label="Date">
-                        <input
-                          type="date"
-                          name="day"
-                          min={today}
-                          defaultValue={today}
-                          required
-                        />
-                      </Field>
-                      <Field label="Event size">
-                        <select name="size">
-                          <option>Dinner</option>
-                          <option>Drinks</option>
-                          <option>Big one</option>
-                        </select>
-                      </Field>
-                    </div>
-                    <button className="primary" disabled={busy}>
-                      Add Gold Event <Plus size={18} />
-                    </button>
-                  </form>
-                </section>
-                {[...data.events]
-                  .sort((a, b) => a.day.localeCompare(b.day))
-                  .map((e) => (
-                    <section className="card between" key={e.id}>
-                      <Sparkles />
-                      <div className="grow">
-                        <h3>{e.name}</h3>
-                        <p>
-                          {e.day} · {e.size}
-                        </p>
-                      </div>
-                      <button
-                        className="text-button"
-                        onClick={() => navigate("Today")}
-                      >
-                        Log afterwards
-                      </button>
-                      <button
-                        aria-label="Remove event"
-                        className="icon-button"
-                        onClick={() =>
-                          void run(async () => {
-                            await api({ action: "deleteEvent", id: e.id });
-                            await reload();
-                          })
-                        }
-                      >
-                        <X size={17} />
-                      </button>
-                    </section>
-                  ))}
-              </>
+              <EventCalendar
+                today={today}
+                events={data.events}
+                busy={busy}
+                onSave={async (event) => {
+                  setBusy(true);
+                  setError("");
+                  try {
+                    await api({ action: "event", ...event });
+                    analytics("gold_created");
+                    await reload();
+                    setNotice(
+                      "Event saved to your calendar. A social life is part of the plan.",
+                    );
+                  } catch (e) {
+                    setError(
+                      e instanceof Error ? e.message : "Could not save event",
+                    );
+                    throw e;
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+                onRemove={async (id) => {
+                  await run(async () => {
+                    await api({ action: "deleteEvent", id });
+                    await reload();
+                    setNotice("Event removed from your calendar.");
+                  });
+                }}
+              />
             )}
             {tab === "Settings" && (
               <>

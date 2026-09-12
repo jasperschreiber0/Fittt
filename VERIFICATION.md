@@ -1,5 +1,11 @@
 # Production verification — 12 September 2026
 
+## Social calendar — 13 September 2026
+
+Events now presents a Monday-first monthly calendar, today/selected-date styling, private Gold Event markers, date-specific add/remove controls and an upcoming-event list. Selecting an upcoming event opens its month and date. Simple planning reminders retain regular meals and avoid compensatory exercise. Existing FITTT event storage, RLS and Gold Event integrity rules remain unchanged; no database migration was needed.
+
+Lint, typecheck and production build passed. A phone browser test covers leap-day selection, event save, date marker, month navigation, upcoming-event navigation and deletion using intercepted test data; five login/voice regression tests also passed. The 390px screenshot was inspected and checked for horizontal overflow. No real user events were created or removed during automated verification.
+
 ## Phone logging update — 13 September 2026
 
 Today now leads with the logging composer, before adherence and Sunday review. Browser dictation requests continuous interim results, renders words during speech, replaces evolving hypotheses without duplication, and appends new recording sessions to the draft. Listening has a visible status and stop control; the app does not claim microphone activity until the browser start event. Review is disabled during capture. Draft/not-saved messaging distinguishes capture from confirmation. Unsupported or denied microphones retain typed text and offer keyboard dictation.
