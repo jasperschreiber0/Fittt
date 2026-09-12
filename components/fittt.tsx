@@ -148,6 +148,8 @@ export default function Fittt() {
     [email, setEmail] = useState(""),
     [sent, setSent] = useState(false),
     [token, setToken] = useState("");
+  const [resendAfter, setResendAfter] = useState(0);
+  const [authClock, setAuthClock] = useState(0);
   const [text, setText] = useState(""),
     [estimate, setEstimate] = useState<Estimate | null>(null),
     [clarified, setClarified] = useState(false),
@@ -198,11 +200,32 @@ export default function Fittt() {
     setData({ ...empty, ...j });
   }
   useEffect(() => {
+    if (!sent || data.user) return;
+    const timer = window.setInterval(() => setAuthClock(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [sent, data.user]);
+  useEffect(() => {
     void fetch("/api/data", { cache: "no-store" })
       .then((r) => r.json())
       .then((j) => {
         setData({ ...empty, ...j });
         setInvite(new URLSearchParams(location.search).get("invite") || "");
+        if (new URLSearchParams(location.search).has("authError"))
+          setError(
+            "That sign-in link could not be used. Request a new email code below, then enter it here. You can open the email on any device.",
+          );
+        try {
+          const pending = JSON.parse(
+            sessionStorage.getItem("fittt-login") || "null",
+          );
+          if (!j.user && pending?.email && Date.now() - pending.at < 3600000) {
+            setEmail(pending.email);
+            setSent(true);
+            setResendAfter(pending.at + 60000);
+          } else sessionStorage.removeItem("fittt-login");
+        } catch {
+          /* Storage may be unavailable in private browsing. */
+        }
         if (j.user)
           void api({ action: "analytics", event: "active" }).catch(() => {});
       })
@@ -379,8 +402,21 @@ export default function Fittt() {
                     { email, action: sent ? "verify" : "login", token },
                     "/api/auth",
                   );
-                  if (sent) await reload();
-                  else setSent(true);
+                  if (sent) {
+                    try {
+                      sessionStorage.removeItem("fittt-login");
+                    } catch {}
+                    await reload();
+                  } else {
+                    setSent(true);
+                    setResendAfter(Date.now() + 60000);
+                    try {
+                      sessionStorage.setItem(
+                        "fittt-login",
+                        JSON.stringify({ email, at: Date.now() }),
+                      );
+                    } catch {}
+                  }
                 });
               }}
             >
@@ -392,18 +428,27 @@ export default function Fittt() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   autoComplete="email"
+                  readOnly={sent}
                 />
               </Field>
               {sent && (
                 <>
                   <p>
-                    Check your email for a sign-in link. If it includes a code,
-                    enter it here.
+                    Enter the code sent to <strong>{email}</strong>. Look for
+                    “Your FITTT sign-in code” from Kaspr Accounts, including in
+                    spam. Use the newest code. You can read the email on any
+                    device.
                   </p>
                   <Field label="Email code">
                     <input
                       value={token}
-                      onChange={(e) => setToken(e.target.value)}
+                      onChange={(e) =>
+                        setToken(e.target.value.replace(/\s/g, ""))
+                      }
+                      required
+                      pattern="[0-9]{6,8}"
+                      minLength={6}
+                      maxLength={8}
                       inputMode="numeric"
                       autoComplete="one-time-code"
                     />
@@ -415,9 +460,52 @@ export default function Fittt() {
                   ? "One moment…"
                   : sent
                     ? "Verify code"
-                    : "Email me a sign-in link"}
+                    : "Email me a code"}
                 <ArrowUpRight size={18} />
               </button>
+              {sent && (
+                <div className="choices">
+                  <button
+                    type="button"
+                    disabled={busy || authClock < resendAfter}
+                    onClick={() =>
+                      void run(async () => {
+                        await api({ email, action: "login" }, "/api/auth");
+                        setToken("");
+                        setResendAfter(Date.now() + 60000);
+                        setNotice(
+                          "A new code has been sent. Use the newest email.",
+                        );
+                        try {
+                          sessionStorage.setItem(
+                            "fittt-login",
+                            JSON.stringify({ email, at: Date.now() }),
+                          );
+                        } catch {}
+                      })
+                    }
+                  >
+                    {authClock < resendAfter
+                      ? `Resend in ${Math.min(60, Math.ceil((resendAfter - authClock) / 1000))}s`
+                      : "Resend code"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      setSent(false);
+                      setToken("");
+                      setError("");
+                      setNotice("");
+                      try {
+                        sessionStorage.removeItem("fittt-login");
+                      } catch {}
+                    }}
+                  >
+                    Change email
+                  </button>
+                </div>
+              )}
             </form>
             <p className="small">
               Private body metrics. Shared consistency.
