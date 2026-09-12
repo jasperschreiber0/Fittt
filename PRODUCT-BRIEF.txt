@@ -1,0 +1,983 @@
+Build a production-quality MVP of a mobile-first web app for a 90-day health challenge between small groups of friends.
+
+## PRODUCT THESIS
+
+This is NOT another MyFitnessPal, calorie counter, macro tracker, workout logger or generic habit tracker.
+
+The core idea is:
+
+**Fitness for people who have a life.**
+
+The target user generally wants to eat well, train regularly and improve their body composition, but they also have dinners, weddings, parties, holidays, beers with friends and other social events.
+
+Traditional fitness apps create too much friction and often treat any deviation as failure.
+
+This product should instead answer:
+
+**“Am I still on track?”**
+
+The experience should require as little effort as possible.
+
+The primary interaction is talking naturally to the app.
+
+Example:
+
+> “Pretty good today. Eggs and hash browns for breakfast, chicken pesto pasta for lunch, protein shake, steak and veggies for dinner. Did weights and around 8,000 steps.”
+
+The system should extract and estimate:
+
+- foods
+- quantities where possible
+- estimated calorie range
+- estimated protein
+- alcohol
+- exercise
+- steps
+- confidence
+- assumptions
+
+The user should normally only need to tap:
+
+**Looks right ✓**
+
+Do not create an experience requiring users to search food databases, scan barcodes, manually enter macros or complete long forms.
+
+---
+
+# CORE PRODUCT PRINCIPLES
+
+1. Voice first.
+2. Natural language first.
+3. Estimates rather than fake precision.
+4. Weekly trajectory matters more than individual days.
+5. Planned social events are part of the program.
+6. Recovery matters more than punishment.
+7. Behaviour consistency matters more than calorie perfection.
+8. Private body metrics; shared accountability.
+9. Daily interaction should normally take under 10 seconds.
+10. Every feature must justify the friction it creates.
+
+If a feature adds complexity without materially helping adherence or understanding, do not build it.
+
+---
+
+# USER EXPERIENCE
+
+Design primarily for iPhone-sized screens but make it responsive.
+
+Make it installable as a PWA.
+
+The app should feel extremely simple, polished and premium.
+
+Avoid a clinical diet-app appearance.
+
+Navigation should contain no more than:
+
+**Today | Progress | Friends | Events | Settings**
+
+Today is always the default screen.
+
+---
+
+# ONBOARDING
+
+Keep onboarding extremely short.
+
+Collect:
+
+- first name
+- age
+- sex
+- height
+- current weight
+- optional waist measurement
+- goal: lose fat / maintain / gain
+- optional target weight
+- typical weekly training frequency
+- approximate daily activity/steps
+- approximate current alcohol frequency
+- desired challenge difficulty
+- challenge start date
+
+Calculate an estimated baseline:
+
+- BMR
+- TDEE
+- maintenance calorie range
+- suggested calorie target/range
+- suggested protein target
+- approximate weekly energy target
+
+Clearly label estimates as estimates.
+
+Allow targets to be edited.
+
+Do NOT force calorie counting.
+
+Users should be able to complete onboarding quickly and refine their profile later.
+
+---
+
+# CHALLENGES
+
+A user can:
+
+- create a 90-day challenge
+- invite friends using a link/code
+- join an existing challenge
+
+Initially optimise for groups of 2–10 rather than large social networks.
+
+Each participant has their own personalised targets.
+
+Challenge scoring is standardised so friends with different goals can compete fairly.
+
+Do NOT rank people by:
+
+- lowest calories
+- most weight lost
+- lowest body weight
+- eating the least
+
+Competition should reward adherence and consistency.
+
+---
+
+# VOICE-FIRST LOGGING
+
+This is the most important feature.
+
+The Today screen should prominently feature:
+
+**🎙 Log my day**
+
+Use browser/device speech-to-text where appropriate, with typed natural-language input as fallback.
+
+Users can say things such as:
+
+> “Good day. Eggs and toast breakfast, chicken wrap lunch, protein shake, steak and veggies dinner. Gym this morning. No alcohol.”
+
+Or:
+
+> “Big one. Probably 12 schooners, half a bottle of wine, two slices of pizza and a kebab.”
+
+Or:
+
+> “Add three beers and a burger.”
+
+Or:
+
+> “Dinner was chicken curry and rice. That's me done.”
+
+The AI must convert this into structured data.
+
+Create a structured schema such as:
+
+{
+  foods: [],
+  drinks: [],
+  estimated_calories_low,
+  estimated_calories_high,
+  estimated_protein_low,
+  estimated_protein_high,
+  alcohol_standard_drinks_estimate,
+  exercise: [],
+  steps,
+  assumptions: [],
+  confidence,
+  clarification_required
+}
+
+Do not pretend nutrition estimates are exact.
+
+Display ranges where appropriate.
+
+Example:
+
+**Estimated intake: 2,400–2,700 kcal**
+
+not:
+
+**2,563 kcal**
+
+If ambiguity materially changes the estimate, ask ONE concise clarification.
+
+Example:
+
+> “When you said two pizzas, did you mean two slices or two whole pizzas?”
+
+If the uncertainty is relatively insignificant, make a reasonable assumption and show it.
+
+The goal is minimum friction, not perfect dietary measurement.
+
+---
+
+# CONVERSATIONAL DAILY LOG
+
+Allow multiple entries throughout the day.
+
+Example:
+
+Morning:
+> “Two eggs, two hash browns and coffee.”
+
+Afternoon:
+> “Add a chicken pesto wrap and protein shake.”
+
+Evening:
+> “Steak and vegetables for dinner. Gym done. That's me.”
+
+The system should intelligently update the day's existing record rather than creating three separate days.
+
+Users must be able to correct AI interpretation easily.
+
+Provide:
+
+**Looks right ✓**
+
+and
+
+**Adjust**
+
+Do not force users through every extracted food item unless they choose Adjust.
+
+---
+
+# FAST MODE
+
+Voice cannot be mandatory.
+
+For ordinary days provide an ultra-fast alternative:
+
+Food:
+**On plan / Off plan**
+
+Training:
+**Done / Rest / Missed**
+
+Alcohol:
+**None / Planned / Unplanned**
+
+Optional weight.
+
+Save.
+
+This should take approximately 5–10 seconds.
+
+---
+
+# GREEN DAYS
+
+Create a simple daily status.
+
+### GREEN
+
+Normal day where the user broadly followed their plan.
+
+### GOLD
+
+Pre-planned social event.
+
+### OFF PLAN
+
+A day substantially outside the intended plan without being a planned event.
+
+Avoid aggressive red failure screens.
+
+One imperfect day should not psychologically destroy the challenge.
+
+---
+
+# GOLD EVENTS
+
+This is a major differentiator.
+
+Users can schedule a social event beforehand.
+
+Examples:
+
+- birthday
+- wedding
+- Christmas party
+- dinner
+- pub
+- holiday
+- work function
+
+Tap:
+
+**🎉 Add Gold Event**
+
+Keep creation extremely simple:
+
+Event name
+Date
+Optional event size:
+
+**Dinner | Drinks | Big one**
+
+A Gold Event is intentional flexibility, not a cheat day.
+
+The app should never encourage starving before a social event.
+
+Before the event, it can show useful context such as:
+
+> “You've had a strong week and are currently around 1,600 kcal below your weekly target. Enjoy tonight and log it afterwards.”
+
+Afterwards:
+
+> “How did we go?”
+
+The user should be able to speak the answer.
+
+Example:
+
+> “About 10 beers, burger and chips and probably four slices of pizza.”
+
+Estimate the impact and allow confirmation.
+
+---
+
+# WEEKLY ENERGY BANK
+
+Make this one of the main product concepts.
+
+Instead of obsessing over daily calories, calculate estimated weekly energy balance.
+
+Example:
+
+**THIS WEEK**
+
+Target: ~18,900 kcal
+
+Estimated intake:
+~17,200–18,000
+
+Estimated position:
+**~900–1,700 kcal under target**
+
+Saturday:
+**Gold Event 🎉**
+
+Use ranges where uncertainty exists.
+
+Answer the user's real question:
+
+**“Can I enjoy Saturday and still be roughly on track?”**
+
+Do not present calorie banking as permission or encouragement to restrict excessively before social events.
+
+---
+
+# “WHERE AM I AT?” AI
+
+Add a conversational action:
+
+**Ask**
+
+Examples:
+
+> “I've got dinner and drinks tonight. Where am I sitting?”
+
+> “If I have six beers and a burger tonight what does that do to my week?”
+
+> “I've got a wedding Saturday. Should I change anything this week?”
+
+The AI should use:
+
+- personalised targets
+- current week's estimated intake
+- training
+- previous social events
+- upcoming Gold Events
+- weight trend if available
+
+Then provide a short practical answer.
+
+Do not provide extreme restriction or punishment recommendations.
+
+---
+
+# SUNDAY RESET
+
+Build a weekly review.
+
+This should be psychologically supportive without being cheesy.
+
+Example:
+
+**WEEK 4**
+
+Adherence: 89%
+
+Training: 5/5 ✓
+Nutrition: 6/7 ✓
+Alcohol-free days: 6
+Gold Events: 1
+Unplanned drinking: 0
+
+Estimated weekly energy balance:
+~500–1,000 kcal deficit
+
+Weight trend:
+−0.3 kg
+
+Then:
+
+**Next week's focus**
+
+One or two useful recommendations.
+
+If Saturday was excessive, do NOT recommend starvation, fasting or punishment exercise.
+
+Instead:
+
+- return to normal eating
+- hydrate
+- hit protein target
+- normal movement
+- resume training schedule
+
+Core philosophy:
+
+**Never miss twice.**
+
+---
+
+# PERSONAL PROGRESS
+
+Private metrics:
+
+- weight
+- rolling average weight
+- waist
+- optional progress photos
+- estimated energy balance
+- training adherence
+- alcohol consumption
+- Green/Gold days
+- streak
+- overall adherence
+
+Weight should preferably be displayed using a rolling trend rather than making users react to daily fluctuations.
+
+Progress photos must be private.
+
+---
+
+# FRIENDS / LEADERBOARD
+
+The social layer should be motivating but extremely lightweight.
+
+Default shared information:
+
+- first name
+- profile/avatar
+- overall adherence %
+- training completion
+- Green days
+- current streak
+- Gold Events
+- group challenge achievements
+
+Default private:
+
+- weight
+- waist
+- progress photos
+- exact calories
+- exact body composition
+- detailed food diary
+
+Allow privacy settings.
+
+Example leaderboard:
+
+1. Jasper — 91%
+2. Sam — 88%
+3. Tom — 84%
+
+Do not create weight-loss competitions.
+
+---
+
+# GROUP MOMENTS
+
+Add lightweight group achievements without creating a full social network.
+
+Examples:
+
+**Perfect Week**
+Everyone finishes ≥85%.
+
+**Dry Week**
+Everyone completes the agreed alcohol-free period.
+
+**Training Sweep**
+Everyone reaches their personal training target.
+
+**30 Green Days**
+Group milestone.
+
+Avoid feeds, DMs and complicated social functionality in V1.
+
+---
+
+# ALCOHOL
+
+Alcohol is a first-class component of the product.
+
+Track:
+
+- alcohol-free days
+- planned drinking events
+- unplanned drinking events
+- approximate standard drinks
+- estimated alcohol calories
+
+Allow natural Australian language where possible:
+
+- schooner
+- pint
+- middy
+- stubby
+- bottle of wine
+- spirits
+- cocktails
+
+The AI should understand that serving sizes vary and estimate accordingly.
+
+Do not moralise about alcohol.
+
+Focus on intentionality and trajectory.
+
+---
+
+# FRICTION REDUCTION
+
+Continuously optimise for fewer taps.
+
+Important:
+
+- persistent login
+- social login / magic link
+- sensible defaults
+- remember previous choices
+- no unnecessary confirmation dialogs
+- no mandatory food database
+- no barcode scanning requirement
+- no mandatory calorie entry
+- no mandatory weighing
+- no complicated workout logging
+- no long daily questionnaires
+- voice and natural language everywhere useful
+
+Where possible, the user should be able to say:
+
+> “Same breakfast as yesterday.”
+
+or:
+
+> “Normal weekday, gym done, no drinks.”
+
+and have the system understand.
+
+Support reusable personal food memory.
+
+If a user frequently says:
+
+> “my usual breakfast”
+
+allow the system to learn what that refers to after confirmation.
+
+This personal food memory is potentially valuable because estimates should improve over time without increasing friction.
+
+---
+
+# UNCERTAINTY ENGINE
+
+Treat uncertainty as a product feature.
+
+Every AI nutrition estimate should internally maintain:
+
+- estimate
+- range
+- confidence
+- assumptions
+
+Over time learn frequently consumed meals and serving sizes.
+
+Example:
+
+First time:
+“Chicken pesto pasta”
+Confidence: low-medium
+
+After the user has confirmed the same meal several times:
+“My chicken pesto pasta”
+Confidence: high
+
+The product should therefore become more personalised and useful the longer someone uses it.
+
+---
+
+# TRAJECTORY ENGINE
+
+This is another key differentiator.
+
+Don't merely report what happened.
+
+Continuously estimate:
+
+**Given the user's current behaviour, where are they likely to finish Day 90?**
+
+Example:
+
+**DAY 31 / 90**
+
+Current weight trend: 89.8 kg
+
+Current trajectory:
+**~87.1–88.0 kg by Day 90**
+
+Target:
+87.5 kg
+
+**You're on track.**
+
+Or:
+
+**Current trajectory: ~89 kg**
+
+Target: 87 kg
+
+**Slightly behind target.**
+
+Then suggest the smallest sustainable adjustment required.
+
+Never respond with drastic calorie reductions.
+
+This gives the app forward-looking value instead of being merely a diary.
+
+---
+
+# MINIMUM VIABLE DAY
+
+Allow users to establish a minimum standard for chaotic days.
+
+Example:
+
+- protein target broadly met
+- some fruit/vegetables
+- no unplanned alcohol
+- 30-minute walk
+
+If the user cannot execute the full plan, the app can suggest:
+
+**Save the day**
+
+and show the minimum actions that keep momentum.
+
+This should not become another complicated score.
+
+---
+
+# SCORING
+
+Develop a transparent scoring model.
+
+Prioritise:
+
+- nutrition adherence
+- training adherence
+- alcohol intentionality
+- consistency
+- recovery after off-plan days
+
+Do NOT reward eating dramatically below calorie targets.
+
+Do NOT give additional points for excessive exercise.
+
+Gold Events should not automatically destroy adherence.
+
+An example weighting to prototype:
+
+Nutrition adherence: 35%
+Training adherence: 25%
+Alcohol intentionality: 25%
+Consistency/recovery: 15%
+
+Test this and adjust if necessary.
+
+Aim for:
+
+**85%+ = successful challenge**
+
+Make scoring explainable.
+
+Users should always be able to tap their score and understand why it changed.
+
+---
+
+# NOTIFICATIONS
+
+Keep notifications minimal.
+
+Potential notification:
+
+> “Haven't checked in today — 10 seconds and you're done.”
+
+Do not nag repeatedly.
+
+Optional Gold Event reminders can be useful.
+
+Weekly review notification should be opt-in.
+
+---
+
+# AI ARCHITECTURE
+
+Use AI only where it creates meaningful value.
+
+Good AI use cases:
+
+- natural-language parsing
+- voice transcript interpretation
+- food/drink estimation
+- clarification questions
+- personal food memory
+- weekly review
+- trajectory explanation
+- event planning
+- conversational “where am I at?” questions
+
+Do NOT use an LLM for deterministic calculations.
+
+Use application code for:
+
+- BMR
+- TDEE
+- calorie arithmetic
+- rolling averages
+- adherence scores
+- weekly balances
+- trends
+- leaderboard rankings
+
+Require structured AI outputs validated against schemas.
+
+Never trust free-form model output for calculations that can be deterministic.
+
+---
+
+# DATA MODEL
+
+Design a clean Supabase/Postgres schema covering approximately:
+
+users
+profiles
+challenges
+challenge_members
+daily_logs
+food_entries
+drink_entries
+exercise_entries
+weight_entries
+waist_entries
+gold_events
+voice_logs
+ai_estimates
+personal_food_memories
+weekly_reviews
+challenge_scores
+achievements
+notification_preferences
+
+Use row-level security correctly.
+
+A participant must not be able to access another participant's private health/body data simply by manipulating API requests.
+
+Treat privacy as important from the beginning.
+
+---
+
+# STACK
+
+Preferred:
+
+Frontend:
+Next.js
+TypeScript
+Tailwind
+mobile-first responsive UI
+PWA
+
+Backend:
+Supabase
+Postgres
+Supabase Auth
+Row Level Security
+
+AI:
+OpenAI API with structured outputs
+
+Speech:
+Start with the simplest reliable speech-to-text implementation available for the web/PWA.
+Architect so transcription can later be upgraded without rewriting the product.
+
+Hosting:
+Use the simplest appropriate production deployment.
+
+Avoid unnecessary infrastructure.
+
+---
+
+# COST CONTROL
+
+This is initially being tested with three friends.
+
+Optimise AI usage.
+
+Do not call an LLM every time the UI changes.
+
+Store parsed results.
+
+Cache/reuse personal meal estimates.
+
+Use deterministic calculations wherever possible.
+
+Track AI cost per active user.
+
+The MVP should be inexpensive to operate.
+
+---
+
+# COMPETITIVE POSITIONING
+
+Be aware that users can already track food, workouts and weight using products such as MyFitnessPal, MacroFactor, Lose It!, Strava, Whoop and general AI assistants.
+
+Do not attempt to beat established products at their strongest feature.
+
+Our wedge is:
+
+**Low-friction, voice-first accountability for people balancing fitness with a real social life.**
+
+Differentiators:
+
+1. Speak instead of manually logging.
+2. Estimates instead of fake precision.
+3. Planned social events.
+4. Weekly energy context.
+5. Intentional vs unplanned alcohol.
+6. Recovery after big days.
+7. Small private friend challenges.
+8. Personal food memory that reduces friction over time.
+9. Forward-looking Day-90 trajectory.
+10. “Am I still on track?” rather than “Did I perfectly hit today's macros?”
+
+Protect that simplicity.
+
+---
+
+# MVP — BUILD THIS FIRST
+
+V1 must include:
+
+1. Authentication
+2. Fast onboarding
+3. Create/join challenge
+4. Invite link
+5. Today screen
+6. Voice/natural-language logging
+7. AI food/drink interpretation
+8. Estimate confirmation
+9. Fast manual check-in
+10. Green/Gold/off-plan days
+11. Gold Events
+12. Personal targets
+13. Weekly energy position
+14. Weight tracking + rolling trend
+15. Basic Day-90 trajectory
+16. Friends leaderboard
+17. Privacy controls
+18. Weekly review
+19. Personal food memory
+20. PWA/mobile experience
+
+Do NOT initially build:
+
+- subscriptions
+- public profiles
+- large communities
+- complicated feeds
+- DMs
+- barcode scanning
+- comprehensive food database
+- detailed workout programming
+- wearable integrations
+- restaurant integrations
+- native iOS application
+- elaborate gamification
+- admin enterprise tooling
+
+Those can wait until the three-person test demonstrates demand.
+
+---
+
+# TESTING MODE
+
+This product will initially be tested by three real users over a 90-day period.
+
+Add lightweight product analytics/events so we can learn:
+
+- days active
+- daily check-in completion
+- time to complete check-in
+- voice vs fast check-in usage
+- AI estimate acceptance rate
+- number of corrections
+- clarification frequency
+- Gold Events created
+- weekly review opens
+- streaks
+- challenge retention
+- Day 7 / Day 30 / Day 60 / Day 90 retention
+
+Most important metric:
+
+**Are people still voluntarily logging after the novelty wears off?**
+
+Secondary metric:
+
+**How many seconds/taps does a normal daily interaction require?**
+
+Create an internal feedback action:
+
+**💡 Something annoying?**
+
+It should take one tap and allow voice/text feedback.
+
+This is important during the three-person experiment.
+
+---
+
+# SAFETY / PRODUCT BEHAVIOUR
+
+Do not encourage:
+
+- starvation
+- purging
+- punishment exercise
+- extreme fasting to compensate for social events
+- dangerous calorie restriction
+- competitive weight loss between friends
+
+If behaviour appears extreme, avoid optimising it further and encourage a more appropriate sustainable approach.
+
+The product should reinforce consistency rather than guilt.
+
+---
+
+# DESIGN
+
+Make the product visually polished

@@ -1,0 +1,3 @@
+import { db } from '@/lib/supabase';
+import { z } from 'zod';
+export async function POST(req:Request){const s=await db();const b=await req.json();if(b.action==='logout'){await s.auth.signOut();return Response.json({ok:true});}const email=z.email().parse(b.email);if(b.action==='verify'){const {error}=await s.auth.verifyOtp({email,token:z.string().regex(/^\d{6,8}$/).parse(b.token),type:'email'});return Response.json(error?{error:error.message}:{ok:true},{status:error?400:200});}const {error}=await s.auth.signInWithOtp({email,options:{emailRedirectTo:new URL('/auth/callback',process.env.NEXT_PUBLIC_APP_URL||req.url).toString()}});return Response.json(error?{error:error.message}:{ok:true},{status:error?400:200});}
