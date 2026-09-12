@@ -4,6 +4,18 @@ Fitness for people who have a life.
 
 Mobile-first 90-day challenges for 2–10 friends. The four main destinations are Today, Calendar, Friends and Progress. Today leads with voice/text logging; the profile's More button opens targets, saved meals, private weight history and privacy controls.
 
+## Daily intelligence and Sunday recaps
+
+Today shows a short estimated nutrition/activity readout after logging. Expand for ranges, assumptions and reported details. New AI parses structure training type/duration, step provenance and unusual-day context; old saved entries still load. Quantities are self-reported or estimated, never presented as verified measurements.
+
+`lib/intelligence.ts` is shared between the app and `fittt-weekly` worker. Recaps are generated from Sunday 06:00 in the profile timezone (hourly scheduler; typically by 06:12) for the seven completed days ending Saturday. They are available in Progress without the app being open. App open/Refresh catches up and recomputes corrected logs; one private row per user/week and an input hash prevent duplicate work. No recap emails or push notifications are sent. Recaps and prescriptions make no AI calls, so incur no additional AI token cost.
+
+Next-week suggestions use the goal, personal 90-day period, recent weights, 28 days of logging patterns, training/step baseline and upcoming events. Missing days never count as zero calories; full weekly intake is unknown unless all seven food days are complete. Adjustments require at least five complete days this week, ten in 28 days, a usable weight trend, a coherent/sustainable goal and at least 14 days left. The single calorie nudge is capped at 100 kcal/day from the saved baseline; training does not increase to compensate. Suggestions never overwrite personal targets. Event illustrations allocate at most 500 kcal above the usual day within the weekly target range, only with sufficient data and an on-track trend, and never create a drinking allowance.
+
+Forecasts require four private weights across 14 days, including a reading within seven days. They extrapolate a rolling trend to personal Day 90 with an uncertainty band and suppress extreme rates. This is a heuristic, not a validated clinical prediction or a promise that a calculated calorie change will close a gap. See [NIDDK's dynamic weight-planning guidance](https://www.niddk.nih.gov/health-information/weight-management/body-weight-planner). Informational activity ranges use broad [2024 Adult Compendium MET categories](https://pacompendium.com/adult-compendium/) above resting expenditure; they do not add calorie credit or double-count steps. High alcohol logs retain honest estimates and show [alcohol-overdose guidance](https://www.niaaa.nih.gov/publications/brochures-and-fact-sheets/understanding-dangers-of-alcohol-overdose) when relevant.
+
+Migration `20260912223854_fittt_weekly_intelligence.sql` adds `fittt_reviews` (owner SELECT/DELETE; worker writes only), `fittt_review_jobs` (service-only one-use scheduler nonces), pg_cron/pg_net and the FITTT-only hourly job. The worker authenticates either a real user JWT (own recap only) or a short-lived, atomically consumed job nonce. No service key is in the cron command, browser or repository. Existing Kaspr tables, auth settings and jobs are unchanged.
+
 ## Stack and deployment
 
 Next.js 16.3.5, React, TypeScript, Supabase Auth/Postgres, a private authenticated Supabase Edge Function for OpenAI structured interpretation, and Railway Docker deployment. All dependencies are pinned in package.json and package-lock.json.
@@ -50,7 +62,7 @@ The authenticated edge function reserves usage before model calls, with a databa
 
 `fittt_analytics` stores action names, duration and timestamps without diary text. `fittt_ai_usage` stores tokens and estimated cost by user. Check-in rows support D7/D30/D60/D90 retention, weekly logging consistency, streaks and training completion. Acceptance, adjustments, clarifications, voice starts, Fast Mode starts, reviews, progress and Gold Events are instrumented. The owner can analyze these tables through the database connector; no broad analytics dashboard is exposed to app users.
 
-Progress provides a short weekly summary. Fast Mode includes the minimum-day guidance. Detailed nutrition sits behind expandable More controls. Difficulty preferences, Ask-AI chat, Day-90 prediction, waist entry, achievements and detailed weekly energy are removed from the interface; historical records and underlying calculation functions remain intact. Push/email reminder delivery and progress-photo uploads are not included in this V1. PWA caches no health data and displays an honest offline reconnect screen instead of acknowledging unsaved writes. Personal data export and diary deletion are available in More.
+Progress provides the saved Sunday recap, next-week plan and expandable private trajectory. Fast Mode includes minimum-day guidance. Detailed nutrition sits behind expandable controls. Difficulty preferences, Ask-AI chat, waist entry and achievements remain hidden. Historical records remain intact. Push/email reminder delivery and progress-photo uploads are not included. PWA caches no health data and displays an honest offline reconnect screen instead of acknowledging unsaved writes. Personal data export and diary deletion are available in More and include saved recaps.
 
 ## Verification
 

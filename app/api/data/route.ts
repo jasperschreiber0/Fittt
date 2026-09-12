@@ -10,6 +10,7 @@ import {
   type Entry,
 } from "@/lib/engine";
 import { z } from "zod";
+import { activitySummary } from "@/lib/intelligence";
 export async function GET() {
   const s = await db();
   const {
@@ -25,6 +26,7 @@ export async function GET() {
     "memories",
     "ai_usage",
     "challenges",
+    "reviews",
   ] as const;
   const results = await Promise.all(
     tables.map((t) => s.from("fittt_" + t).select("*")),
@@ -122,7 +124,10 @@ export async function POST(req: Request) {
                 : merged.caloriesLow <= target.high * 1.25
                   ? "on"
                   : "off",
-              training: merged.exercise.length
+              training: activitySummary(
+                (entries ?? []) as Entry[],
+                profile.weight,
+              ).training
                 ? "done"
                 : existing?.data.training || "rest",
               alcohol:
@@ -265,6 +270,7 @@ export async function POST(req: Request) {
           "events",
           "memories",
           "ai_cache",
+          "reviews",
         ]) {
           const r = await s
             .from("fittt_" + t)

@@ -3,6 +3,11 @@ import { useEffect, useState } from "react";
 import { VoiceComposer } from "./voice-composer";
 import { EventCalendar } from "./event-calendar";
 import {
+  DailyReadout,
+  WeeklyIntelligence,
+  type SavedReview,
+} from "./intelligence";
+import {
   Mic,
   ArrowUpRight,
   Check,
@@ -21,7 +26,6 @@ import {
   targets,
   mergeEntries,
   dayScore,
-  streak,
   dateInZone,
   dayDiff,
   weekDays,
@@ -49,6 +53,7 @@ type Data = {
   memories: { name: string; estimate: Estimate }[];
   ai_usage: { cost_usd: number }[];
   challenges: { id: string; name: string; start: string; code: string }[];
+  reviews: SavedReview[];
 };
 type Board = {
   name: string;
@@ -73,6 +78,7 @@ const empty: Data = {
   memories: [],
   ai_usage: [],
   challenges: [],
+  reviews: [],
 };
 const fmt = (n: number) => Math.round(n).toLocaleString();
 const range = (l: number, h: number) => `${fmt(l)}–${fmt(h)}`;
@@ -184,8 +190,7 @@ export default function Fittt() {
     challengeDay = challenge
       ? Math.max(0, Math.min(90, dayDiff(today, challenge.start) + 1))
       : 0,
-    days = weekDays(today),
-    weekLogs = data.days.filter((d) => days.includes(d.day));
+    days = weekDays(today);
   async function reload() {
     const r = await fetch("/api/data", { cache: "no-store" });
     const j = await r.json();
@@ -221,6 +226,10 @@ export default function Fittt() {
         }
         if (j.user)
           void api({ action: "analytics", event: "active" }).catch(() => {});
+        if (j.user && j.profiles?.length)
+          void api({}, "/api/review")
+            .then(reload)
+            .catch(() => {});
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -817,6 +826,16 @@ export default function Fittt() {
                     </div>
                   )}
                 </section>
+                <DailyReadout
+                  context={{
+                    profile: p,
+                    entries: data.entries,
+                    days: data.days,
+                    weights: data.weights,
+                    events: data.events,
+                  }}
+                  day={today}
+                />
                 <section className="status-card">
                   <div className="between">
                     <span className="pill">
@@ -967,23 +986,25 @@ export default function Fittt() {
               <>
                 <div className="eyebrow">ONE WEEK AT A TIME</div>
                 <h1>Keep showing up.</h1>
+                <WeeklyIntelligence
+                  context={{
+                    profile: p,
+                    entries: data.entries,
+                    days: data.days,
+                    weights: data.weights,
+                    events: data.events,
+                  }}
+                  reviews={data.reviews}
+                  busy={busy}
+                  onRefresh={() =>
+                    void run(async () => {
+                      await api({}, "/api/review");
+                      await reload();
+                      setNotice("Sunday recap updated.");
+                    })
+                  }
+                />
                 <section className="card">
-                  <h2>Your week</h2>
-                  <div className="big-number">
-                    {weekLogs.filter((d) => d.data.complete).length}
-                    <small> days checked in</small>
-                  </div>
-                  <p>
-                    {streak(data.days, today)} day streak ·{" "}
-                    {weekLogs.filter((d) => d.data.training === "done").length}/
-                    {p.training} planned training sessions.
-                  </p>
-                  <p>
-                    {weekLogs.length <
-                    days.filter((d) => d <= today && d >= p.start).length
-                      ? "One quick check-in is a good next step. Pick up where you are."
-                      : "You’re building a steady rhythm. Keep it simple and make room for your plans."}
-                  </p>
                   <button
                     className="text-button"
                     onClick={() => setScoreOpen(!scoreOpen)}
@@ -1533,7 +1554,7 @@ function Onboarding({
             alcoholFrequency: num("alcoholFrequency"),
             start: String(f.get("start")),
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            targetWeight: initial?.targetWeight || null,
+            targetWeight: optional("targetWeight"),
             waist: initial?.waist || null,
             calorieLow: optional("calorieLow"),
             calorieHigh: optional("calorieHigh"),
@@ -1644,6 +1665,7 @@ function Onboarding({
               ["calorieLow", "Calorie target low"],
               ["calorieHigh", "Calorie target high"],
               ["protein", "Protein target (g)"],
+              ["targetWeight", "Optional 90-day goal weight (kg, private)"],
             ].map(([key, label]) => (
               <Field key={key} label={label}>
                 <input

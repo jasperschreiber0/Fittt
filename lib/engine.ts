@@ -30,6 +30,12 @@ export const profileSchema = z
     "Target range must be ordered",
   );
 export type Profile = z.infer<typeof profileSchema>;
+export const activitySchema = z.object({
+  kind: z.enum(["weights", "cardio", "walk", "other"]),
+  description: z.string().max(100),
+  minutes: z.number().min(1).max(600).nullable(),
+  durationBasis: z.enum(["reported", "estimated", "unknown"]),
+});
 export const itemSchema = z.object({
   name: z.string().min(1).max(120),
   quantity: z.string().max(80),
@@ -38,6 +44,7 @@ export const itemSchema = z.object({
   proteinLow: z.number().min(0).max(600),
   proteinHigh: z.number().min(0).max(600),
   standardDrinks: z.number().min(0).max(100),
+  quantityBasis: z.enum(["reported", "estimated"]).optional(),
 });
 export const estimateBase = z.object({
   foods: z.array(itemSchema).max(40),
@@ -49,6 +56,17 @@ export const estimateBase = z.object({
   clarification: z.string().max(180).nullable(),
   safetyConcern: z.boolean(),
   completeDay: z.boolean(),
+  activity: z.array(activitySchema).max(10).optional(),
+  stepsBasis: z.enum(["reported", "estimated", "unknown"]).optional(),
+  dayContext: z.string().max(200).nullable().optional(),
+});
+// New AI responses are strict; saved older entries remain readable.
+export const interpretationSchema = estimateBase.extend({
+  foods: z.array(itemSchema.required()).max(40),
+  drinks: z.array(itemSchema.required()).max(40),
+  activity: z.array(activitySchema).max(10),
+  stepsBasis: z.enum(["reported", "estimated", "unknown"]),
+  dayContext: z.string().max(200).nullable(),
 });
 export const estimateSchema = estimateBase.superRefine((e, c) => {
   for (const i of [...e.foods, ...e.drinks])

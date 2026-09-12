@@ -1003,3 +1003,13 @@ button:hover:not(:disabled) {
     height: 29px;
   }
 }
+.weekly-intelligence { display: grid; gap: 18px; }
+.weekly-intelligence .card { margin-bottom: 0; }
+.recap-facts { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(0, 1.6fr); gap: 12px 20px; font-size: 15px; }
+.recap-facts dt { color: var(--muted); }
+.recap-facts dd { margin: 0; overflow-wrap: anywhere; }
+.next-week-plan li { margin: 12px 0; line-height: 1.6; }
+.next-week-plan ul { padding-left: 20px; }
+.event-plan { border-top: 1px solid #dfe5d7; margin-top: 20px; padding-top: 16px; }
+.daily-readout details, .weekly-intelligence details { margin-top: 16px; }
+@media(max-width: 500px) { .recap-facts { grid-template-columns: 1fr; gap: 4px; } .recap-facts dd { margin-bottom: 12px; } }

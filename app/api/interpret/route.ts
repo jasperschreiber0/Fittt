@@ -1,7 +1,7 @@
 import { db } from "@/lib/supabase";
 import {
   estimateSchema,
-  estimateBase,
+  interpretationSchema,
   unsafeText,
   safeMessage,
   targets,
@@ -83,6 +83,7 @@ export async function POST(req: Request) {
       .update(
         JSON.stringify({
           text,
+          version: "daily-intelligence-1",
           ask: !!b.ask,
           clarified: !!b.clarified,
           context,
@@ -110,7 +111,7 @@ export async function POST(req: Request) {
           ask: !!b.ask,
           clarified: !!b.clarified,
           context,
-          schema: z.toJSONSchema(estimateBase),
+          schema: z.toJSONSchema(interpretationSchema),
         }),
       },
     );
