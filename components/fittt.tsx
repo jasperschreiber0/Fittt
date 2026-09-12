@@ -391,6 +391,10 @@ export default function Fittt() {
               <br />
               Do it with your people.
             </p>
+            <p className="small">
+              Sign in once. We’ll keep you signed in on this browser, even after
+              you close it.
+            </p>
             <form
               onSubmit={(e) => {
                 e.preventDefault();

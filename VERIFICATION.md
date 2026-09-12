@@ -1,5 +1,9 @@
 # Production verification — 12 September 2026
 
+## Returning without a new code — 13 September 2026
+
+Confirmed the existing Supabase SSR cookies are persistent (400-day browser lifetime), with refresh-token renewal on return. Added a regression using the real SSR adapter and mocked Auth responses: verify once, retain only persistent cookies, create a new client, renew an expired access token, restore the user without another OTP, and clear cookies on local logout. This models browser cookie retention; it does not test a physical phone restart or override browser clearing/private-mode settings. Logout now explicitly affects only the current session, rather than revoking the user's other devices. Shared Supabase session settings are unchanged. The login screen explains that sign-in is remembered. All 14 unit/integration tests, lint, typecheck and production build passed.
+
 ## Simplified interface — 13 September 2026
 
 Four main destinations: Today, Calendar, Friends and Progress. More is accessed through the profile button and contains private weight history, editable targets, saved meals and privacy/export/delete controls. Nutrition details are expandable; Progress presents a short weekly summary. Removed the separate Sunday review, Ask-AI chat, difficulty preference, prediction, waist entry, achievement display and detailed energy dashboard. Minimum-day guidance is incorporated into Fast Mode. No database migration or historical-data cleanup was performed.

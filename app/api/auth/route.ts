@@ -29,7 +29,12 @@ export async function POST(req: Request) {
     );
   const b = parsed.data;
   if (b.action === "logout") {
-    await s.auth.signOut();
+    const { error } = await s.auth.signOut({ scope: "local" });
+    if (error)
+      return Response.json(
+        { error: "Could not sign out. Please try again." },
+        { status: 503 },
+      );
     return Response.json({ ok: true });
   }
   const email = b.email;
