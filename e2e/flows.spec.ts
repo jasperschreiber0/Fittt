@@ -82,7 +82,7 @@ test("three user onboarding, challenge, invite, logs, Gold, privacy, progress", 
     await expect(
       page.getByText("Check-in saved. Back to your life."),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Events", exact: true }).click();
+    await page.getByRole("button", { name: "Calendar", exact: true }).click();
     const eventName = "Friends dinner " + crypto.randomUUID().slice(0, 6);
     await page.getByRole("button", { name: "Next month", exact: true }).click();
     await page.locator(".calendar-day").first().click();
@@ -95,11 +95,15 @@ test("three user onboarding, challenge, invite, logs, Gold, privacy, progress", 
       ),
     ).toBeVisible();
     await page.getByRole("button", { name: "Progress", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "Your week", exact: true }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "More", exact: true }).click();
+    await page.getByText("Private weight trend", { exact: true }).click();
     await page.getByLabel("Weight (kg)", { exact: true }).fill(String(80 + i));
     await page.getByRole("button", { name: "Save", exact: true }).click();
     await expect(page.getByText("Private measurement saved.")).toBeVisible();
-    await page.getByRole("button", { name: "Sunday reset" }).click();
-    await expect(page.getByText("Your week, without the guilt.")).toBeVisible();
+
     await page.getByRole("button", { name: "Friends", exact: true }).click();
     await expect(
       page.getByText(accounts[i].name, { exact: true }),

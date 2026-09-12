@@ -47,7 +47,7 @@ test("phone calendar plans a future event, marks its date and removes it", async
     });
   });
   await page.goto("/");
-  await page.getByRole("button", { name: "Events", exact: true }).click();
+  await page.getByRole("button", { name: "Calendar", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "February 2028", exact: true }),
   ).toBeVisible();
@@ -68,7 +68,9 @@ test("phone calendar plans a future event, marks its date and removes it", async
   ).toBeVisible();
   expect(events[0].day).toBe("2028-02-29");
   await page.getByRole("button", { name: "Next month", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "March 2028", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "March 2028", exact: true }),
+  ).toBeVisible();
   await page
     .getByRole("button", { name: /Mia’s birthday dinner.*Drinks/ })
     .click();

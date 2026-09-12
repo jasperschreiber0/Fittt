@@ -2,7 +2,7 @@
 
 Fitness for people who have a life.
 
-Mobile-first 90-day challenges for 2–10 friends. Today is the default; Progress, Friends, Events and Settings are the only main navigation destinations.
+Mobile-first 90-day challenges for 2–10 friends. The four main destinations are Today, Calendar, Friends and Progress. Today leads with voice/text logging; the profile's More button opens targets, saved meals, private weight history and privacy controls.
 
 ## Stack and deployment
 
@@ -50,7 +50,7 @@ The authenticated edge function reserves usage before model calls, with a databa
 
 `fittt_analytics` stores action names, duration and timestamps without diary text. `fittt_ai_usage` stores tokens and estimated cost by user. Check-in rows support D7/D30/D60/D90 retention, weekly logging consistency, streaks and training completion. Acceptance, adjustments, clarifications, voice starts, Fast Mode starts, reviews, progress and Gold Events are instrumented. The owner can analyze these tables through the database connector; no broad analytics dashboard is exposed to app users.
 
-Sunday reset is available in Progress. Push/email reminder delivery and progress-photo uploads are not included in this V1; the UI does not pretend those are active. PWA caches no health data and displays an honest offline reconnect screen instead of acknowledging unsaved writes. Personal data export and diary deletion are available in Settings.
+Progress provides a short weekly summary. Fast Mode includes the minimum-day guidance. Detailed nutrition sits behind expandable More controls. Difficulty preferences, Ask-AI chat, Day-90 prediction, waist entry, achievements and detailed weekly energy are removed from the interface; historical records and underlying calculation functions remain intact. Push/email reminder delivery and progress-photo uploads are not included in this V1. PWA caches no health data and displays an honest offline reconnect screen instead of acknowledging unsaved writes. Personal data export and diary deletion are available in More.
 
 ## Verification
 

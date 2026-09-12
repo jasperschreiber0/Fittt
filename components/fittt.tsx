@@ -11,7 +11,7 @@ import {
   ChartNoAxesCombined,
   Users,
   Sparkles,
-  Settings,
+  CalendarDays,
   ChevronRight,
   MessageCircle,
   Leaf,
@@ -21,14 +21,11 @@ import {
   targets,
   mergeEntries,
   dayScore,
-  weeklyAdherence,
   streak,
   dateInZone,
   dayDiff,
   weekDays,
-  weeklyEnergy,
   weightTrend,
-  trajectory,
   safeMessage,
   type Profile,
   type Entry,
@@ -41,7 +38,7 @@ type Data = {
   profiles: { data: Profile }[];
   entries: Entry[];
   days: { day: string; data: Fast }[];
-  weights: Weight[];
+  weights: (Weight & { waist?: number | null })[];
   events: {
     id: string;
     day: string;
@@ -167,10 +164,7 @@ export default function Fittt() {
     [selectedChallenge, setSelectedChallenge] = useState(""),
     [feedback, setFeedback] = useState(false),
     [feedbackText, setFeedbackText] = useState(""),
-    [ask, setAsk] = useState(false),
-    [askAnswer, setAskAnswer] = useState(""),
     [adjust, setAdjust] = useState(false),
-    [review, setReview] = useState(false),
     [scoreOpen, setScoreOpen] = useState(false),
     [editing, setEditing] = useState(false),
     [invite, setInvite] = useState(""),
@@ -184,7 +178,6 @@ export default function Fittt() {
       (e) => e.day === today && e.created_at.slice(0, 10) <= today,
     ),
     t = p ? targets(p) : null,
-    energy = p ? weeklyEnergy(data.entries, p, today) : null,
     challenge =
       data.challenges.find((c) => c.id === selectedChallenge) ||
       data.challenges[0],
@@ -192,10 +185,7 @@ export default function Fittt() {
       ? Math.max(0, Math.min(90, dayDiff(today, challenge.start) + 1))
       : 0,
     days = weekDays(today),
-    weekLogs = data.days.filter((d) => days.includes(d.day)),
-    adherence = p
-      ? weeklyAdherence(data.days, data.entries, p, today, data.events)
-      : 0;
+    weekLogs = data.days.filter((d) => days.includes(d.day));
   async function reload() {
     const r = await fetch("/api/data", { cache: "no-store" });
     const j = await r.json();
@@ -296,17 +286,16 @@ export default function Fittt() {
     r.start();
     analytics("voice_start");
   }
-  async function interpret(asking = false) {
+  async function interpret() {
     const j = await api(
       {
         text: question ? text + "\nClarification: " + answer : text,
         clarified: !!question || clarified,
-        ask: asking,
       },
       "/api/interpret",
     );
     if (j.message) {
-      setAskAnswer(j.message);
+      setNotice(j.message);
       return;
     }
     setEstimate(j.estimate);
@@ -366,9 +355,14 @@ export default function Fittt() {
           FITTT<span>•</span>
         </button>
         <span className="header-note">A little consistency. A real life.</span>
-        <span className="avatar">
+        <button
+          className="avatar"
+          aria-label="More"
+          onClick={() => navigate("More")}
+          disabled={!p}
+        >
           {p?.name.slice(0, 1) || <Leaf size={18} />}
-        </span>
+        </button>
       </header>
       <main>
         {error && (
@@ -587,59 +581,62 @@ export default function Fittt() {
                   {estimate && !question ? (
                     <div className="estimate">
                       <div className="between">
-                        <h3>Your estimate</h3>
+                        <h3>Does this look right?</h3>
                         <span className="tag">
                           {estimate.confidence} confidence
                         </span>
                       </div>
-                      <strong>
-                        {range(
-                          mergeEntries([
-                            {
-                              id: "preview",
-                              day: today,
-                              estimate,
-                              source: "text",
-                            },
-                          ]).caloriesLow,
-                          mergeEntries([
-                            {
-                              id: "preview",
-                              day: today,
-                              estimate,
-                              source: "text",
-                            },
-                          ]).caloriesHigh,
-                        )}{" "}
-                        kcal
-                      </strong>
                       <p>
                         {[...estimate.foods, ...estimate.drinks]
                           .map((i) => i.name)
                           .join(" · ") || "Movement update"}
                       </p>
-                      <p>
-                        {range(
-                          [...estimate.foods, ...estimate.drinks].reduce(
-                            (s, i) => s + i.proteinLow,
-                            0,
-                          ),
-                          [...estimate.foods, ...estimate.drinks].reduce(
-                            (s, i) => s + i.proteinHigh,
-                            0,
-                          ),
-                        )}{" "}
-                        g protein ·{" "}
-                        {[...estimate.drinks, ...estimate.foods]
-                          .reduce((s, i) => s + i.standardDrinks, 0)
-                          .toFixed(1)}{" "}
-                        standard drinks
-                      </p>
-                      {estimate.assumptions.map((a) => (
-                        <p className="small" key={a}>
-                          {a}
+                      <details>
+                        <summary>More: nutrition & assumptions</summary>{" "}
+                        <strong>
+                          {range(
+                            mergeEntries([
+                              {
+                                id: "preview",
+                                day: today,
+                                estimate,
+                                source: "text",
+                              },
+                            ]).caloriesLow,
+                            mergeEntries([
+                              {
+                                id: "preview",
+                                day: today,
+                                estimate,
+                                source: "text",
+                              },
+                            ]).caloriesHigh,
+                          )}{" "}
+                          kcal
+                        </strong>
+                        <p>
+                          {range(
+                            [...estimate.foods, ...estimate.drinks].reduce(
+                              (s, i) => s + i.proteinLow,
+                              0,
+                            ),
+                            [...estimate.foods, ...estimate.drinks].reduce(
+                              (s, i) => s + i.proteinHigh,
+                              0,
+                            ),
+                          )}{" "}
+                          g protein ·{" "}
+                          {[...estimate.drinks, ...estimate.foods]
+                            .reduce((s, i) => s + i.standardDrinks, 0)
+                            .toFixed(1)}{" "}
+                          standard drinks
                         </p>
-                      ))}
+                        {estimate.assumptions.map((a) => (
+                          <p className="small" key={a}>
+                            {a}
+                          </p>
+                        ))}
+                      </details>
                       {estimate.safetyConcern && <p>{safeMessage}</p>}
                       {adjust && (
                         <>
@@ -723,7 +720,7 @@ export default function Fittt() {
                         !text.trim() ||
                         (!!question && !answer)
                       }
-                      onClick={() => void run(() => interpret(false))}
+                      onClick={() => void run(() => interpret())}
                     >
                       {busy
                         ? "Making sense of it…"
@@ -745,6 +742,10 @@ export default function Fittt() {
                   </button>
                   {fastOpen && (
                     <div className="fast">
+                      <p className="small">
+                        Your minimum day: regular meals, comfortable movement
+                        and an honest check-in. No bonus points needed.
+                      </p>
                       <Choices
                         label="Food"
                         value={fast.food}
@@ -876,95 +877,6 @@ export default function Fittt() {
                     })}
                   </div>
                 </section>
-                {new Date(today + "T12:00:00Z").getUTCDay() === 0 && (
-                  <button
-                    className="notice"
-                    onClick={() => {
-                      navigate("Progress");
-                      setReview(true);
-                      analytics("review_open");
-                    }}
-                  >
-                    Your Sunday reset is ready. Take a look →
-                  </button>
-                )}
-                <div className="grid">
-                  <section className="card">
-                    <div className="eyebrow">THIS WEEK · ESTIMATED</div>
-                    <h2>Room for real life.</h2>
-                    <div className="big-number">
-                      {energy?.loggedDays
-                        ? range(energy.intakeLow, energy.intakeHigh)
-                        : "Still taking shape"}
-                      <small>{energy?.loggedDays ? " kcal logged" : ""}</small>
-                    </div>
-                    <p>
-                      {energy?.loggedDays} complete food days of{" "}
-                      {energy?.elapsedDays} elapsed. Missing days stay unknown.
-                    </p>
-                    {!!energy?.loggedDays && (
-                      <p>
-                        Position for logged days:{" "}
-                        {range(energy.positionLow, energy.positionHigh)} kcal{" "}
-                        {energy.positionHigh < 0
-                          ? "(negative = above target)"
-                          : "(positive = below target)"}
-                      </p>
-                    )}
-                    <div className="divider" />
-                    <p className="small">
-                      Full-week target:{" "}
-                      {range(energy!.weeklyLow, energy!.weeklyHigh)} kcal. This
-                      is context, not a balance to spend. Keep normal meals
-                      before events.
-                    </p>
-                    <button
-                      className="text-button"
-                      onClick={() => {
-                        setAsk(!ask);
-                        setAskAnswer("");
-                      }}
-                    >
-                      Where am I at? <MessageCircle size={17} />
-                    </button>
-                    {ask && (
-                      <>
-                        <textarea
-                          aria-label="Ask about your week"
-                          placeholder="I have dinner and drinks tonight. Where am I sitting?"
-                          value={text}
-                          onChange={(e) => setText(e.target.value)}
-                        />
-                        <button
-                          className="secondary"
-                          disabled={busy || !text}
-                          onClick={() => void run(() => interpret(true))}
-                        >
-                          Ask
-                        </button>
-                      </>
-                    )}
-                    {askAnswer && <p className="notice">{askAnswer}</p>}
-                  </section>
-                  <section className="card soft">
-                    <Leaf size={25} />
-                    <h2>Save the day.</h2>
-                    <p>Chaotic day? Your minimum is enough.</p>
-                    <p className="minimum">{p.minimum}</p>
-                    <button
-                      className="secondary"
-                      onClick={() => {
-                        setFastOpen(true);
-                        setFast({ ...fast, minimum: true });
-                        setNotice(
-                          "Keep your check-in honest. Your minimum keeps momentum; it does not add bonus points.",
-                        );
-                      }}
-                    >
-                      Use my minimum day
-                    </button>
-                  </section>
-                </div>
                 {!!entries.length && (
                   <section className="card">
                     <div className="between">
@@ -973,11 +885,14 @@ export default function Fittt() {
                         {totals.complete ? "FULL DAY" : "PARTIAL DAY"}
                       </span>
                     </div>
-                    <p>
-                      {range(totals.caloriesLow, totals.caloriesHigh)} kcal ·{" "}
-                      {range(totals.proteinLow, totals.proteinHigh)} g protein ·{" "}
-                      {totals.drinks.toFixed(1)} standard drinks
-                    </p>
+                    <details>
+                      <summary>More: today’s nutrition</summary>{" "}
+                      <p>
+                        {range(totals.caloriesLow, totals.caloriesHigh)} kcal ·{" "}
+                        {range(totals.proteinLow, totals.proteinHigh)} g protein
+                        · {totals.drinks.toFixed(1)} standard drinks
+                      </p>
+                    </details>
                     {entries.map((e) => (
                       <div className="entry" key={e.id}>
                         <div>
@@ -1012,29 +927,32 @@ export default function Fittt() {
                         >
                           Adjust
                         </button>
-                        <button
-                          className="text-button"
-                          onClick={() => {
-                            const name = prompt(
-                              "A short name for this meal, e.g. my usual breakfast",
-                            );
-                            if (name)
-                              void run(async () => {
-                                await api({
-                                  action: "memory",
-                                  name,
-                                  estimate: {
-                                    ...e.estimate,
-                                    completeDay: false,
-                                  },
+                        <details className="entry-more">
+                          <summary>More</summary>{" "}
+                          <button
+                            className="text-button"
+                            onClick={() => {
+                              const name = prompt(
+                                "A short name for this meal, e.g. my usual breakfast",
+                              );
+                              if (name)
+                                void run(async () => {
+                                  await api({
+                                    action: "memory",
+                                    name,
+                                    estimate: {
+                                      ...e.estimate,
+                                      completeDay: false,
+                                    },
+                                  });
+                                  await reload();
+                                  setNotice("Remembered for next time.");
                                 });
-                                await reload();
-                                setNotice("Remembered for next time.");
-                              });
-                          }}
-                        >
-                          Remember
-                        </button>
+                            }}
+                          >
+                            Remember
+                          </button>
+                        </details>
                       </div>
                     ))}
                   </section>
@@ -1043,184 +961,44 @@ export default function Fittt() {
             )}
             {tab === "Progress" && (
               <>
-                <div className="eyebrow">PRIVATE TO YOU</div>
-                <h1>Your bigger picture.</h1>
-                <div className="grid">
-                  <section className="card">
-                    <div className="eyebrow">WEEKLY ADHERENCE</div>
-                    <button
-                      className="score"
-                      onClick={() => setScoreOpen(!scoreOpen)}
-                    >
-                      {adherence}
-                      <small>%</small>
-                    </button>
-                    <p>
-                      {streak(data.days, today)} day check-in streak ·{" "}
-                      {weekLogs.filter((d) => d.data.alcohol === "none").length}{" "}
-                      alcohol-free days this week.
-                    </p>
-                    <p>
-                      85%+ is a successful rhythm. Unlogged elapsed days count
-                      toward consistency.
-                    </p>
-                    {scoreOpen && (
-                      <p>
-                        Nutrition 35 · Personal weekly training target 25 ·
-                        Alcohol intentionality 25 · Check-in 15. Training credit
-                        is capped at your target and prorated through the week;
-                        rest needs no extra workout. Gold allows flexibility. No
-                        bonus for low calories or extra exercise. A clearly
-                        inadequate completed day receives no nutrition points.
-                      </p>
-                    )}
-                    <button
-                      className="text-button"
-                      onClick={() => {
-                        setReview(!review);
-                        analytics("review_open");
-                      }}
-                    >
-                      Sunday reset <ArrowUpRight size={17} />
-                    </button>
-                    {review && (
-                      <div className="notice">
-                        <h3>Your week, without the guilt.</h3>
-                        <p>
-                          {
-                            data.events.filter((e) => days.includes(e.day))
-                              .length
-                          }{" "}
-                          Gold Events · {adherence}% adherence.
-                        </p>
-                        <p>
-                          {energy?.loggedDays
-                            ? `${range(energy.intakeLow, energy.intakeHigh)} kcal across ${energy.loggedDays} complete food days. Position against target: ${range(energy.positionLow, energy.positionHigh)} kcal (positive = below target).`
-                            : "No complete food days yet. Fast check-ins still count; energy stays unknown."}
-                        </p>
-                        {data.weights.length > 0 && (
-                          <p>
-                            Latest private seven-day weight mean:{" "}
-                            {weightTrend(data.weights)
-                              .at(-1)!
-                              .average.toFixed(1)}{" "}
-                            kg.
-                          </p>
-                        )}
-                        <p>
-                          {
-                            weekLogs.filter((d) => d.data.training === "done")
-                              .length
-                          }
-                          /{p.training} training sessions ·{" "}
-                          {weekLogs.filter((d) => d.data.food === "on").length}{" "}
-                          on-plan days ·{" "}
-                          {
-                            weekLogs.filter((d) => d.data.alcohol === "none")
-                              .length
-                          }{" "}
-                          alcohol-free days ·{" "}
-                          {
-                            weekLogs.filter(
-                              (d) => d.data.alcohol === "unplanned",
-                            ).length
-                          }{" "}
-                          unplanned drinking days.
-                        </p>
-                        <p>
-                          Next week:{" "}
-                          {weekLogs.length <
-                          days.filter((d) => d <= today).length
-                            ? "Make one quick daily check-in your focus."
-                            : "Keep your usual rhythm and plan social events ahead."}{" "}
-                          Return to normal meals after a big night. Never miss
-                          twice.
-                        </p>
-                      </div>
-                    )}
-                  </section>
-                  <section className="card">
-                    <div className="eyebrow">DAY 90 · ESTIMATED</div>
-                    <h2>
-                      {(() => {
-                        const tr = trajectory(data.weights, p.start, today);
-                        return tr
-                          ? `${tr.low.toFixed(1)}–${tr.high.toFixed(1)} kg`
-                          : "A trend takes time.";
-                      })()}
-                    </h2>
-                    <p>
-                      Uses your rolling weight trend, not AI. Needs at least
-                      four weigh-ins spanning 14 days. It’s a rough projection,
-                      not a promise.
-                    </p>
-                    {p.targetWeight && (
-                      <p>Your private target: {p.targetWeight} kg</p>
-                    )}
-                  </section>
-                </div>
+                <div className="eyebrow">ONE WEEK AT A TIME</div>
+                <h1>Keep showing up.</h1>
                 <section className="card">
-                  <h2>A trend, not a verdict.</h2>
-                  <p>Your weight and waist are always private.</p>
-                  <form
-                    className="inline-form"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const f = new FormData(e.currentTarget);
-                      void run(async () => {
-                        await api({
-                          action: "weight",
-                          day: f.get("day"),
-                          weight: Number(f.get("weight")),
-                          waist: Number(f.get("waist")) || null,
-                        });
-                        await reload();
-                        setNotice("Private measurement saved.");
-                      });
-                    }}
+                  <h2>Your week</h2>
+                  <div className="big-number">
+                    {weekLogs.filter((d) => d.data.complete).length}
+                    <small> days checked in</small>
+                  </div>
+                  <p>
+                    {streak(data.days, today)} day streak ·{" "}
+                    {weekLogs.filter((d) => d.data.training === "done").length}/
+                    {p.training} planned training sessions.
+                  </p>
+                  <p>
+                    {weekLogs.length <
+                    days.filter((d) => d <= today && d >= p.start).length
+                      ? "One quick check-in is a good next step. Pick up where you are."
+                      : "You’re building a steady rhythm. Keep it simple and make room for your plans."}
+                  </p>
+                  <button
+                    className="text-button"
+                    onClick={() => setScoreOpen(!scoreOpen)}
                   >
-                    <Field label="Date">
-                      <input
-                        name="day"
-                        type="date"
-                        defaultValue={today}
-                        max={today}
-                        required
-                      />
-                    </Field>
-                    <Field label="Weight (kg)">
-                      <input
-                        name="weight"
-                        type="number"
-                        min="40"
-                        max="250"
-                        step="0.1"
-                        required
-                      />
-                    </Field>
-                    <Field label="Waist (cm, optional)">
-                      <input
-                        name="waist"
-                        type="number"
-                        min="40"
-                        max="200"
-                        step="0.1"
-                      />
-                    </Field>
-                    <button className="primary" disabled={busy}>
-                      Save
-                    </button>
-                  </form>
-                  {weightTrend(data.weights)
-                    .slice(-14)
-                    .map((w) => (
-                      <div className="between measurement" key={w.day}>
-                        <span>{w.day}</span>
-                        <b>{w.weight} kg</b>
-                        <span>7-day mean {w.average.toFixed(1)} kg</span>
-                      </div>
-                    ))}
+                    How consistency is scored
+                  </button>
+                  {scoreOpen && (
+                    <p className="small">
+                      Nutrition 35%, planned training 25%, alcohol
+                      intentionality 25%, check-ins 15%. Training credit is
+                      capped. No bonus for eating too little or exercising more.
+                      Rest days count.
+                    </p>
+                  )}
                 </section>
+                <button className="secondary" onClick={() => navigate("More")}>
+                  More: private weight trend & targets{" "}
+                  <ChevronRight size={17} />
+                </button>
               </>
             )}
             {tab === "Friends" && (
@@ -1310,39 +1088,9 @@ export default function Fittt() {
                       ))}
                     {!board.length && (
                       <p>
-                        No shared check-ins yet. Sharing can be changed in
-                        Settings.
+                        No shared check-ins yet. Sharing can be changed in More.
                       </p>
                     )}
-                    <div className="notice">
-                      <Sparkles size={19} />
-                      <b> Group moments</b>
-                      <p>
-                        {board.length >= 2 &&
-                        board.every(
-                          (b) =>
-                            b.days.filter(
-                              (d) => days.includes(d.day) && d.trainingDone,
-                            ).length >= b.training_target,
-                        )
-                          ? "Training sweep!"
-                          : "Your next milestone: 30 Green days together."}
-                      </p>
-                      <p>
-                        {board.reduce(
-                          (s, b) =>
-                            s +
-                            b.days.filter(
-                              (d) =>
-                                d.nutrition === 35 &&
-                                d.alcohol === 25 &&
-                                !d.gold,
-                            ).length,
-                          0,
-                        )}{" "}
-                        shared Green days so far.
-                      </p>
-                    </div>
                   </section>
                 )}
                 <div className="grid">
@@ -1417,7 +1165,7 @@ export default function Fittt() {
                 </div>
               </>
             )}
-            {tab === "Events" && (
+            {tab === "Calendar" && (
               <EventCalendar
                 today={today}
                 events={data.events}
@@ -1450,10 +1198,68 @@ export default function Fittt() {
                 }}
               />
             )}
-            {tab === "Settings" && (
+            {tab === "More" && (
               <>
                 <div className="eyebrow">MAKE IT YOURS</div>
-                <h1>Your plan. Your privacy.</h1>
+                <h1>More, when you need it.</h1>
+                <details className="more-section">
+                  <summary>Private weight trend</summary>{" "}
+                  <section className="card">
+                    <h2>A trend, not a verdict.</h2>
+                    <p>Your weight stays private.</p>
+                    <form
+                      className="inline-form"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const f = new FormData(e.currentTarget);
+                        void run(async () => {
+                          await api({
+                            action: "weight",
+                            day: f.get("day"),
+                            weight: Number(f.get("weight")),
+                            waist:
+                              data.weights.find((w) => w.day === f.get("day"))
+                                ?.waist ?? null,
+                          });
+                          await reload();
+                          setNotice("Private measurement saved.");
+                        });
+                      }}
+                    >
+                      <Field label="Date">
+                        <input
+                          name="day"
+                          type="date"
+                          defaultValue={today}
+                          max={today}
+                          required
+                        />
+                      </Field>
+                      <Field label="Weight (kg)">
+                        <input
+                          name="weight"
+                          type="number"
+                          min="40"
+                          max="250"
+                          step="0.1"
+                          required
+                        />
+                      </Field>
+                      <button className="primary" disabled={busy}>
+                        Save
+                      </button>
+                    </form>
+                    {weightTrend(data.weights)
+                      .slice(-14)
+                      .map((w) => (
+                        <div className="between measurement" key={w.day}>
+                          <span>{w.day}</span>
+                          <b>{w.weight} kg</b>
+                          <span>7-day mean {w.average.toFixed(1)} kg</span>
+                        </div>
+                      ))}
+                  </section>
+                </details>
                 <section className="card">
                   <h2>Personal targets</h2>
                   <p>
@@ -1498,8 +1304,8 @@ export default function Fittt() {
                     Share my name and adherence with challenge friends
                   </label>
                   <p>
-                    Weight, waist, exact calories, drinks and your food diary
-                    are never on the leaderboard.
+                    Weight, exact calories, drinks and your food diary are never
+                    on the leaderboard.
                   </p>
                   <p className="small">
                     Food descriptions are sent to OpenAI when you request
@@ -1541,7 +1347,7 @@ export default function Fittt() {
                   </button>
                 </section>
                 <section className="card">
-                  <h2>Food memory</h2>
+                  <h2>Saved meals</h2>
                   <p>
                     Confirmed meals you’ve asked FITTT to remember. Use their
                     name to log again.
@@ -1583,18 +1389,6 @@ export default function Fittt() {
                   ))}
                 </section>
                 <section className="card">
-                  <h2>Keep it lightweight.</h2>
-                  <p>
-                    Your recorded AI cost: US$
-                    {data.ai_usage
-                      .reduce((s, u) => s + Number(u.cost_usd), 0)
-                      .toFixed(4)}
-                    . Cached meals and Fast Mode use no AI.
-                  </p>
-                  <p className="small">
-                    Sunday review is available in Progress. This V1 does not
-                    send push notifications.
-                  </p>
                   <button
                     className="secondary"
                     onClick={() =>
@@ -1675,10 +1469,9 @@ export default function Fittt() {
         <nav aria-label="Main navigation">
           {[
             [Sun, "Today"],
-            [ChartNoAxesCombined, "Progress"],
+            [CalendarDays, "Calendar"],
             [Users, "Friends"],
-            [Sparkles, "Events"],
-            [Settings, "Settings"],
+            [ChartNoAxesCombined, "Progress"],
           ].map(([Icon, label]) => {
             const I = Icon as typeof Sun;
             return (
@@ -1732,17 +1525,18 @@ function Onboarding({
             goal: f.get("goal") as Profile["goal"],
             training: num("training"),
             activity: f.get("activity") as Profile["activity"],
-            difficulty: f.get("difficulty") as Profile["difficulty"],
+            difficulty: initial?.difficulty || "balanced",
             alcoholFrequency: num("alcoholFrequency"),
             start: String(f.get("start")),
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            targetWeight: optional("targetWeight"),
-            waist: optional("waist"),
+            targetWeight: initial?.targetWeight || null,
+            waist: initial?.waist || null,
             calorieLow: optional("calorieLow"),
             calorieHigh: optional("calorieHigh"),
             protein: optional("protein"),
             share: f.get("share") === "on",
-            minimum: String(f.get("minimum")),
+            minimum:
+              initial?.minimum || "Regular meals and comfortable movement.",
             reviewReminder: false,
           });
         }}
@@ -1830,16 +1624,6 @@ function Onboarding({
               defaultValue={initial?.alcoholFrequency ?? 1}
             />
           </Field>
-          <Field label="Your pace">
-            <select
-              name="difficulty"
-              defaultValue={initial?.difficulty || "balanced"}
-            >
-              <option value="gentle">Gentle</option>
-              <option value="balanced">Balanced</option>
-              <option value="focused">Focused</option>
-            </select>
-          </Field>
           <Field label="Start date">
             <input
               name="start"
@@ -1850,11 +1634,9 @@ function Onboarding({
           </Field>
         </div>
         <details>
-          <summary>Optional measurements & target refinements</summary>
+          <summary>Optional target refinements</summary>
           <div className="form-grid">
             {[
-              ["waist", "Waist (cm)"],
-              ["targetWeight", "Target weight (kg)"],
               ["calorieLow", "Calorie target low"],
               ["calorieHigh", "Calorie target high"],
               ["protein", "Protein target (g)"],
@@ -1872,16 +1654,6 @@ function Onboarding({
             ))}
           </div>
         </details>
-        <Field label="My minimum on a chaotic day">
-          <textarea
-            name="minimum"
-            maxLength={300}
-            defaultValue={
-              initial?.minimum ||
-              "Regular meals with protein, some fruit or vegetables, a comfortable walk, and no unplanned alcohol."
-            }
-          />
-        </Field>
         <label className="check">
           <input
             type="checkbox"

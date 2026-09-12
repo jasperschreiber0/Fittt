@@ -1,5 +1,11 @@
 # Production verification — 12 September 2026
 
+## Simplified interface — 13 September 2026
+
+Four main destinations: Today, Calendar, Friends and Progress. More is accessed through the profile button and contains private weight history, editable targets, saved meals and privacy/export/delete controls. Nutrition details are expandable; Progress presents a short weekly summary. Removed the separate Sunday review, Ask-AI chat, difficulty preference, prediction, waist entry, achievement display and detailed energy dashboard. Minimum-day guidance is incorporated into Fast Mode. No database migration or historical-data cleanup was performed.
+
+Seven targeted browser tests passed against the local production build, covering the four-tab phone layout, More controls, preservation of retired profile values when editing targets, calendar add/remove, authentication recovery and simulated live speech. Lint and production build passed. Physical microphone capture remains dependent on device/browser support.
+
 ## Social calendar — 13 September 2026
 
 Events now presents a Monday-first monthly calendar, today/selected-date styling, private Gold Event markers, date-specific add/remove controls and an upcoming-event list. Selecting an upcoming event opens its month and date. Simple planning reminders retain regular meals and avoid compensatory exercise. Existing FITTT event storage, RLS and Gold Event integrity rules remain unchanged; no database migration was needed.
