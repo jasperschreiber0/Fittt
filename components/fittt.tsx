@@ -203,6 +203,8 @@ export default function Fittt() {
       .then((j) => {
         setData({ ...empty, ...j });
         setInvite(new URLSearchParams(location.search).get("invite") || "");
+        if (j.user)
+          void api({ action: "analytics", event: "active" }).catch(() => {});
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -519,6 +521,18 @@ export default function Fittt() {
                     })}
                   </div>
                 </section>
+                {new Date(today + "T12:00:00Z").getUTCDay() === 0 && (
+                  <button
+                    className="notice"
+                    onClick={() => {
+                      navigate("Progress");
+                      setReview(true);
+                      analytics("review_open");
+                    }}
+                  >
+                    Your Sunday reset is ready. Take a look →
+                  </button>
+                )}
                 <section className="card log-card">
                   <div className="between">
                     <h2>A few words. Day logged.</h2>
@@ -974,6 +988,27 @@ export default function Fittt() {
                     {review && (
                       <div className="notice">
                         <h3>Your week, without the guilt.</h3>
+                        <p>
+                          {
+                            data.events.filter((e) => days.includes(e.day))
+                              .length
+                          }{" "}
+                          Gold Events · {adherence}% adherence.
+                        </p>
+                        <p>
+                          {energy?.loggedDays
+                            ? `${range(energy.intakeLow, energy.intakeHigh)} kcal across ${energy.loggedDays} complete food days. Position against target: ${range(energy.positionLow, energy.positionHigh)} kcal (positive = below target).`
+                            : "No complete food days yet. Fast check-ins still count; energy stays unknown."}
+                        </p>
+                        {data.weights.length > 0 && (
+                          <p>
+                            Latest private seven-day weight mean:{" "}
+                            {weightTrend(data.weights)
+                              .at(-1)!
+                              .average.toFixed(1)}{" "}
+                            kg.
+                          </p>
+                        )}
                         <p>
                           {
                             weekLogs.filter((d) => d.data.training === "done")

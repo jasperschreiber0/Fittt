@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 const config: NextConfig = {
   poweredByHeader: false,
   output: "standalone",
+  turbopack: { root: process.cwd() },
+  outputFileTracingRoot: process.cwd(),
   async headers() {
     return [
       {

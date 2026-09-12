@@ -10,6 +10,8 @@ import {
   trajectory,
   standardDrinks,
   unsafeText,
+  weeklyAdherence,
+  streak,
   type Profile,
   type Entry,
   type Estimate,
@@ -64,6 +66,23 @@ const entry = (id = "a"): Entry => ({
   estimate: structuredClone(estimate),
 });
 describe("deterministic estimates and scoring", () => {
+  it("requires actual weekly training completion and excludes pre-onboarding days", () => {
+    const logs = Array.from({ length: 7 }, (_, i) => ({
+      day: `2026-09-${String(7 + i).padStart(2, "0")}`,
+      data: {
+        food: "on" as const,
+        training: "rest" as const,
+        alcohol: "none" as const,
+        complete: true,
+        minimum: false,
+      },
+    }));
+    expect(weeklyAdherence(logs, [], p, "2026-09-13", [])).toBe(75);
+    expect(
+      weeklyAdherence(logs, [], { ...p, training: 0 }, "2026-09-13", []),
+    ).toBe(100);
+    expect(streak(logs, "2026-09-13")).toBe(7);
+  });
   it("uses Mifflin St Jeor and a fixed activity factor", () => {
     expect(targets(p).bmr).toBe(1900);
     expect(targets(p).tdee).toBe(2945);

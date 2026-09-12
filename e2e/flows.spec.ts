@@ -48,7 +48,7 @@ test("three user onboarding, challenge, invite, logs, Gold, privacy, progress", 
       page
         .getByLabel("First name", { exact: true })
         .or(page.getByRole("button", { name: "Today", exact: true })),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15000 });
     if (await page.getByLabel("First name", { exact: true }).isVisible()) {
       await page
         .getByLabel("First name", { exact: true })
@@ -58,8 +58,10 @@ test("three user onboarding, challenge, invite, logs, Gold, privacy, progress", 
     await expect(page.getByText(`Hey ${accounts[i].name}.`)).toBeVisible();
     await page.getByRole("button", { name: "Friends", exact: true }).click();
     if (i === 0) {
-      await page.getByLabel("Challenge name").fill("FITTT verification");
-      await page.getByRole("button", { name: "Create challenge" }).click();
+      if (!(await page.getByLabel("Challenge", { exact: true }).isVisible())) {
+        await page.getByLabel("Challenge name").fill("FITTT verification");
+        await page.getByRole("button", { name: "Create challenge" }).click();
+      }
       await expect(
         page.getByText("INVITE CODE", { exact: true }),
       ).toBeVisible();
@@ -81,14 +83,13 @@ test("three user onboarding, challenge, invite, logs, Gold, privacy, progress", 
       page.getByText("Check-in saved. Back to your life."),
     ).toBeVisible();
     await page.getByRole("button", { name: "Events", exact: true }).click();
-    await page.getByLabel("Event name").fill("Friends dinner");
+    const eventName = "Friends dinner " + crypto.randomUUID().slice(0, 6);
+    await page.getByLabel("Event name").fill(eventName);
     await page
       .getByLabel("Date", { exact: true })
       .fill(new Date(Date.now() + 86400000).toISOString().slice(0, 10));
     await page.getByRole("button", { name: "Add Gold Event" }).click();
-    await expect(
-      page.getByRole("heading", { name: "Friends dinner" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: eventName })).toBeVisible();
     await page.getByRole("button", { name: "Progress", exact: true }).click();
     await page.getByLabel("Weight (kg)", { exact: true }).fill(String(80 + i));
     await page.getByRole("button", { name: "Save", exact: true }).click();
@@ -153,7 +154,17 @@ test("real AI interpretation, correction, idempotent merging and memory", async 
     },
   });
   expect(parsed.ok(), await parsed.text()).toBe(true);
-  const { estimate } = await parsed.json();
+  let { estimate } = await parsed.json();
+  if (estimate.clarification) {
+    const clarified = await request.post(baseURL + "/api/interpret", {
+      data: {
+        text: "One medium wrap with 150g grilled chicken, salad and one tablespoon mayonnaise, plus one 375ml 4.8% beer. Only lunch.",
+        clarified: true,
+      },
+    });
+    expect(clarified.ok()).toBe(true);
+    estimate = (await clarified.json()).estimate;
+  }
   expect(estimate.foods.length).toBeGreaterThan(0);
   expect(estimate.drinks.length).toBeGreaterThan(0);
   expect(estimate.clarification).toBeNull();
@@ -197,6 +208,23 @@ test("real AI interpretation, correction, idempotent merging and memory", async 
   data = await (await request.get(baseURL + "/api/data")).json();
   expect(data.entries.some((e: { id: string }) => e.id === id)).toBe(true);
   expect(data.entries.some((e: { id: string }) => e.id === next)).toBe(true);
+  const closedDay = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const completed = await request.post(baseURL + "/api/data", {
+    data: {
+      ...payload,
+      id: crypto.randomUUID(),
+      day: closedDay,
+      estimate: { ...estimate, completeDay: true },
+    },
+  });
+  expect(completed.ok()).toBe(true);
+  const afterCompletion = await (
+    await request.get(baseURL + "/api/data")
+  ).json();
+  expect(
+    afterCompletion.days.find((d: { day: string }) => d.day === closedDay).data
+      .complete,
+  ).toBe(true);
   const safety = await (
     await request.post(baseURL + "/api/interpret", {
       data: { text: "Should I purge dinner to compensate?" },

@@ -82,41 +82,64 @@ export async function POST(req: Request) {
         const estimate = estimateSchema.parse(body.estimate);
         if (estimate.clarification)
           throw Error("Please answer the clarification first");
-        result = await s
-          .from("fittt_entries")
-          .upsert(
-            {
-              ...owner,
-              id: z.uuid().parse(body.id),
-              day,
-              estimate,
-              source: z.enum(["text", "voice", "memory"]).parse(body.source),
-            },
-            { onConflict: "id" },
-          );
+        result = await s.from("fittt_entries").upsert(
+          {
+            ...owner,
+            id: z.uuid().parse(body.id),
+            day,
+            estimate,
+            source: z.enum(["text", "voice", "memory"]).parse(body.source),
+          },
+          { onConflict: "id" },
+        );
         if (result.error) break;
         const { data: entries } = await s
           .from("fittt_entries")
           .select("*")
           .eq("day", day);
         const merged = mergeEntries((entries ?? []) as Entry[]);
-        if (
-          merged.unsafe ||
-          (merged.complete && merged.caloriesHigh < targets(profile).low * 0.75)
-        ) {
+        if (merged.complete || merged.unsafe) {
           const { data: existing } = await s
             .from("fittt_days")
             .select("data")
             .eq("day", day)
             .maybeSingle();
-          if (existing)
-            await s
-              .from("fittt_days")
-              .upsert({
-                ...owner,
-                day,
-                data: { ...existing.data, food: "off", safety: true },
-              });
+          const target = targets(profile);
+          const safety =
+            merged.unsafe ||
+            (merged.complete && merged.caloriesHigh < target.low * 0.75);
+          const { data: planned } = await s
+            .from("fittt_events")
+            .select("id")
+            .eq("day", day)
+            .limit(1);
+          const checkin = await s.from("fittt_days").upsert({
+            ...owner,
+            day,
+            data: {
+              food: safety
+                ? "off"
+                : merged.caloriesLow <= target.high * 1.25
+                  ? "on"
+                  : "off",
+              training: merged.exercise.length
+                ? "done"
+                : existing?.data.training || "rest",
+              alcohol:
+                merged.drinks === 0
+                  ? "none"
+                  : planned?.length || existing?.data.alcohol === "planned"
+                    ? "planned"
+                    : "unplanned",
+              complete: merged.complete,
+              minimum: existing?.data.minimum || false,
+              safety,
+            },
+          });
+          if (checkin.error)
+            throw Error(
+              "Food saved, but check-in could not update. Please use Fast Mode.",
+            );
         }
         break;
       }
@@ -140,44 +163,38 @@ export async function POST(req: Request) {
             merged.caloriesHigh < targets(profile).low * 0.75)
         )
           data.food = "off";
-        result = await s
-          .from("fittt_days")
-          .upsert({
-            ...owner,
-            day,
-            data: {
-              ...data,
-              safety:
-                merged.unsafe ||
-                (merged.complete &&
-                  (entries?.length ?? 0) > 0 &&
-                  merged.caloriesHigh < targets(profile).low * 0.75),
-            },
-          });
+        result = await s.from("fittt_days").upsert({
+          ...owner,
+          day,
+          data: {
+            ...data,
+            safety:
+              merged.unsafe ||
+              (merged.complete &&
+                (entries?.length ?? 0) > 0 &&
+                merged.caloriesHigh < targets(profile).low * 0.75),
+          },
+        });
         break;
       }
       case "weight":
-        result = await s
-          .from("fittt_weights")
-          .upsert({
-            ...owner,
-            day,
-            weight: z.number().min(40).max(250).parse(body.weight),
-            waist: body.waist
-              ? z.number().min(40).max(200).parse(body.waist)
-              : null,
-          });
+        result = await s.from("fittt_weights").upsert({
+          ...owner,
+          day,
+          weight: z.number().min(40).max(250).parse(body.weight),
+          waist: body.waist
+            ? z.number().min(40).max(200).parse(body.waist)
+            : null,
+        });
         break;
       case "event":
         if (day < today) throw Error("Gold Events must be planned beforehand");
-        result = await s
-          .from("fittt_events")
-          .insert({
-            ...owner,
-            day,
-            name: z.string().trim().min(1).max(80).parse(body.name),
-            size: z.enum(["Dinner", "Drinks", "Big one"]).parse(body.size),
-          });
+        result = await s.from("fittt_events").insert({
+          ...owner,
+          day,
+          name: z.string().trim().min(1).max(80).parse(body.name),
+          size: z.enum(["Dinner", "Drinks", "Big one"]).parse(body.size),
+        });
         break;
       case "deleteEvent":
         result = await s
@@ -186,20 +203,12 @@ export async function POST(req: Request) {
           .eq("id", z.uuid().parse(body.id));
         break;
       case "memory":
-        result = await s
-          .from("fittt_memories")
-          .upsert({
-            ...owner,
-            name: z
-              .string()
-              .trim()
-              .min(1)
-              .max(80)
-              .parse(body.name)
-              .toLowerCase(),
-            estimate: estimateSchema.parse(body.estimate),
-            updated_at: new Date().toISOString(),
-          });
+        result = await s.from("fittt_memories").upsert({
+          ...owner,
+          name: z.string().trim().min(1).max(80).parse(body.name).toLowerCase(),
+          estimate: estimateSchema.parse(body.estimate),
+          updated_at: new Date().toISOString(),
+        });
         break;
       case "deleteMemory":
         result = await s
@@ -208,39 +217,32 @@ export async function POST(req: Request) {
           .eq("name", z.string().parse(body.name));
         break;
       case "feedback":
-        result = await s
-          .from("fittt_feedback")
-          .insert({
-            ...owner,
-            message: z.string().trim().min(1).max(2000).parse(body.message),
-          });
+        result = await s.from("fittt_feedback").insert({
+          ...owner,
+          message: z.string().trim().min(1).max(2000).parse(body.message),
+        });
         break;
       case "analytics":
-        result = await s
-          .from("fittt_analytics")
-          .insert({
-            ...owner,
-            event: z
-              .enum([
-                "active",
-                "checkin",
-                "estimate_accept",
-                "estimate_adjust",
-                "clarification",
-                "gold_created",
-                "review_open",
-                "voice_start",
-                "text_start",
-                "fast_start",
-                "feedback",
-                "progress_open",
-              ])
-              .parse(body.event),
-            seconds: Math.min(
-              86400,
-              Math.max(0, Math.round(body.seconds || 0)),
-            ),
-          });
+        result = await s.from("fittt_analytics").insert({
+          ...owner,
+          event: z
+            .enum([
+              "active",
+              "checkin",
+              "estimate_accept",
+              "estimate_adjust",
+              "clarification",
+              "gold_created",
+              "review_open",
+              "voice_start",
+              "text_start",
+              "fast_start",
+              "feedback",
+              "progress_open",
+            ])
+            .parse(body.event),
+          seconds: Math.min(86400, Math.max(0, Math.round(body.seconds || 0))),
+        });
         break;
       case "challenge":
         result = await s.rpc("fittt_challenge", {

@@ -7,6 +7,8 @@ import {
   targets,
   weeklyEnergy,
   dateInZone,
+  weightTrend,
+  trajectory,
   type Entry,
 } from "@/lib/engine";
 import { z } from "zod";
@@ -41,12 +43,30 @@ export async function POST(req: Request) {
       .select("*")
       .order("day", { ascending: false })
       .limit(100);
+    const [events, weights, days] = b.ask
+      ? await Promise.all([
+          s.from("fittt_events").select("day,name,size"),
+          s.from("fittt_weights").select("day,weight"),
+          s.from("fittt_days").select("day,data"),
+        ])
+      : [{ data: [] }, { data: [] }, { data: [] }];
     const context = b.ask
       ? {
           targets: targets(p.data),
           week: weeklyEnergy(
             (entries ?? []) as Entry[],
             p.data,
+            dateInZone(p.data.timezone),
+          ),
+          events: events.data,
+          training: days.data?.map((d) => ({
+            day: d.day,
+            training: d.data.training,
+          })),
+          weightTrend: weightTrend(weights.data || []).slice(-4),
+          trajectory: trajectory(
+            weights.data || [],
+            p.data.start,
             dateInZone(p.data.timezone),
           ),
         }
