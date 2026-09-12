@@ -32,7 +32,7 @@ Performance: 23 pre-existing unindexed foreign-key notices, 16 unused-index noti
 
 Production email signup is not yet verified end to end. The automated tests used disposable preconfirmed users and authenticated sessions; they do not establish email delivery or successful magic-link signup.
 
-1. Add exactly `https://fittt-production.up.railway.app/auth/callback` to the shared Supabase redirect allowlist, preserving Kaspr's site URL and redirects. Automatic approval review blocked this exact security-sensitive change and requested action-time confirmation; the approval question is pending.
+1. Completed after explicit user approval: added `https://fittt-production.up.railway.app/auth/callback` to the shared Supabase redirect allowlist and verified it in the dashboard. Kaspr's existing site URL was preserved.
 2. Configure a verified production email sender. Supabase currently uses its restricted built-in mailer. Resend is signed out in the connected browser; sender verification/configuration remains pending. Shared SMTP must preserve existing Kaspr email behavior.
 3. After those changes, verify actual email signup and callback with pilot accounts.
 
