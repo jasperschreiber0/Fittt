@@ -1,4 +1,43 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap");
+.browser-notice {
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 1px solid #cad6aa;
+  border-radius: 18px;
+  background: #edf2df;
+}
+.browser-notice h2 {
+  font-size: 20px;
+  line-height: 1.3;
+}
+.browser-notice h2 svg {
+  vertical-align: middle;
+  margin-right: 5px;
+}
+.browser-notice p,
+.browser-help p {
+  margin: 10px 0;
+}
+.browser-notice ol,
+.browser-help ol {
+  padding-left: 20px;
+}
+.browser-notice li,
+.browser-help li {
+  margin-bottom: 8px;
+}
+.browser-notice input,
+.browser-help input {
+  width: 100%;
+  min-width: 0;
+}
+.browser-help {
+  margin-bottom: 18px;
+  font-size: 14px;
+}
+.browser-help summary {
+  color: var(--muted);
+}
 :root {
   --paper: #f6f5ef;
   --ink: #163e35;

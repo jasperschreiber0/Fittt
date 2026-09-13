@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { VoiceComposer } from "./voice-composer";
 import { EventCalendar } from "./event-calendar";
+import { BrowserNotice } from "./browser-notice";
 import {
   DailyReadout,
   WeeklyIntelligence,
@@ -479,6 +480,7 @@ export default function Fittt() {
         </button>
       </header>
       <main>
+        <BrowserNotice signedIn={!!data.user} />
         {error && (
           <div role="alert" className="alert">
             {error}
