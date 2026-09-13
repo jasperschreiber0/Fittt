@@ -82,3 +82,11 @@ The automated tests used disposable preconfirmed users. Separately, actual produ
 4. Verified delivery record `5b15be21-4c4e-437c-8c0e-c252c31a315a`, correct sender and FITTT callback, and successful authenticated onboarding. No external setup blocker remains. The owner can enter their own personal onboarding details.
 
 The Railway service uses its configured Dockerfile, port 3000 and `/api/health`; `railway.json` is a reference because this service uses Railway's current dashboard configuration.
+
+## Browser-return investigation — 13 September 2026
+
+Confirmed and corrected a false sign-out path: initial account loading ignored HTTP errors, and temporary Supabase Auth errors were returned as `user: null`. These now produce retry/reconnect behavior. The proxy also preserves the cache-prevention headers supplied by Supabase when rotating session cookies.
+
+The existing live deployment successfully renewed a genuine disposable session and restored it after closing and reopening a persistent Chromium browser profile. The same check passes against the updated production build. This does not reproduce the reported failure on friends' phones and does not establish its exact cause. Physical Safari and overnight persistence have not been verified. The real test uses password-authenticated disposable fixtures to obtain a valid session, then expires only its local freshness timestamp to force renewal; it does not repeat email delivery.
+
+Validation: 30 unit tests, five authentication browser tests, four mobile regressions, real browser restart/renewal, lint, typecheck and production build passed. A local renewal attempt initially lacked network permission; it passed after restarting the server with network access. No database migration or shared Kaspr Auth configuration change is required.

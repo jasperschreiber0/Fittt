@@ -1,5 +1,53 @@
 import { test, expect } from "@playwright/test";
 
+test("temporary account failure retries without asking for another code", async ({
+  page,
+}) => {
+  let calls = 0;
+  await page.route("**/api/data", (route) => {
+    calls++;
+    return calls === 1
+      ? route.fulfill({
+          status: 503,
+          json: { error: "Temporary connection failure" },
+        })
+      : route.fulfill({
+          json: { user: { id: "test", email: "test@example.com" } },
+        });
+  });
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { name: "First, the basics." }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Email address")).not.toBeVisible();
+});
+
+test("connection failure offers reconnect instead of a false sign-out", async ({
+  page,
+}) => {
+  let recovered = false;
+  await page.route("**/api/data", (route) =>
+    recovered
+      ? route.fulfill({
+          json: { user: { id: "test", email: "test@example.com" } },
+        })
+      : route.fulfill({
+          status: 500,
+          json: { error: "Unable to load your data" },
+        }),
+  );
+  await page.goto("/");
+  await expect(
+    page.getByText("Your sign-in hasn’t been reset.", { exact: false }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Email address")).not.toBeVisible();
+  recovered = true;
+  await page.getByRole("button", { name: "Try again", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "First, the basics." }),
+  ).toBeVisible();
+});
+
 test("code entry survives reload; invalid codes can be retried; successful verification opens onboarding", async ({
   page,
 }) => {
@@ -36,7 +84,9 @@ test("code entry survives reload; invalid codes can be retried; successful verif
   );
   await page.getByLabel("Email code").fill("00000000");
   await page.getByRole("button", { name: "Verify code" }).click();
-  await expect(page.locator("main").getByRole("alert")).toContainText("invalid or expired");
+  await expect(page.locator("main").getByRole("alert")).toContainText(
+    "invalid or expired",
+  );
   await page.getByLabel("Email code").fill("12345678");
   await page.getByRole("button", { name: "Verify code" }).click();
   await expect(

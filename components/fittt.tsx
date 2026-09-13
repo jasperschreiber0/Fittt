@@ -197,6 +197,8 @@ export default function Fittt() {
     if (!r.ok) throw Error(j.error);
     setData({ ...empty, ...j });
   }
+  const [restoreFailed, setRestoreFailed] = useState(false);
+  const [restoreAttempt, setRestoreAttempt] = useState(0);
   useEffect(() => {
     const viewport = window.visualViewport;
     if (!viewport) return;
@@ -231,9 +233,29 @@ export default function Fittt() {
     return () => window.clearInterval(timer);
   }, [sent, data.user]);
   useEffect(() => {
-    void fetch("/api/data", { cache: "no-store" })
-      .then((r) => r.json())
+    let cancelled = false;
+    async function restore() {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const r = await fetch("/api/data", {
+            cache: "no-store",
+            signal: AbortSignal.timeout(15000),
+          });
+          const j = await r.json();
+          if (!r.ok || !("user" in j)) throw Error("Unable to reconnect");
+          return j;
+        } catch (error) {
+          if (cancelled || attempt === 2) throw error;
+          await new Promise((resolve) =>
+            setTimeout(resolve, 750 * (attempt + 1)),
+          );
+        }
+      }
+    }
+    void restore()
       .then((j) => {
+        if (cancelled) return;
+        setRestoreFailed(false);
         setData({ ...empty, ...j });
         setInvite(new URLSearchParams(location.search).get("invite") || "");
         if (new URLSearchParams(location.search).has("authError"))
@@ -259,11 +281,18 @@ export default function Fittt() {
             .then(reload)
             .catch(() => {});
       })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!cancelled) setRestoreFailed(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     if ("serviceWorker" in navigator)
       void navigator.serviceWorker.register("/sw.js");
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [restoreAttempt]);
   async function run(fn: () => Promise<void>) {
     setBusy(true);
     setError("");
@@ -384,13 +413,33 @@ export default function Fittt() {
       void run(() => showBoard(challenge.id));
     if (next === "Progress") analytics("progress_open");
   }
-  if (loading)
+  if (loading || restoreFailed)
     return (
       <main className="loading">
         <b className="wordmark">
           FITTT<span>•</span>
         </b>
-        <p>Getting your day ready…</p>
+        <p>
+          {loading
+            ? "Getting your day ready…"
+            : "We couldn’t reconnect to your account."}
+        </p>
+        {restoreFailed && !loading && (
+          <>
+            <p>
+              Your sign-in hasn’t been reset. Check your connection and try
+              again.
+            </p>
+            <button
+              onClick={() => {
+                setLoading(true);
+                setRestoreAttempt((v) => v + 1);
+              }}
+            >
+              Try again
+            </button>
+          </>
+        )}
       </main>
     );
   return (

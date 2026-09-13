@@ -1,4 +1,5 @@
 import { db } from "@/lib/supabase";
+import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import {
   profileSchema,
   estimateSchema,
@@ -15,8 +16,24 @@ export async function GET() {
   const s = await db();
   const {
     data: { user },
+    error: authError,
   } = await s.auth.getUser();
-  if (!user) return Response.json({ user: null });
+  const headers = { "Cache-Control": "private, no-store" };
+  if (
+    authError &&
+    !isAuthSessionMissingError(authError) &&
+    ![
+      "session_not_found",
+      "refresh_token_not_found",
+      "refresh_token_already_used",
+      "bad_jwt",
+    ].includes(authError.code || "")
+  )
+    return Response.json(
+      { error: "We couldn’t reconnect to your account. Please try again." },
+      { status: 503, headers },
+    );
+  if (!user) return Response.json({ user: null }, { headers });
   const tables = [
     "profiles",
     "entries",
@@ -35,7 +52,7 @@ export async function GET() {
   if (error)
     return Response.json(
       { error: "Unable to load your data" },
-      { status: 500 },
+      { status: 500, headers },
     );
   return Response.json(
     {
