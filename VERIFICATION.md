@@ -107,7 +107,7 @@ Twelve browser tests passed locally: three new notice/copy regressions (simulate
 
 ## Lunch and evening reminders
 
-Applied FITTT-only migration `fittt_push_reminders` (local file `20260913101540_fittt_push_reminders.sql`), deployed `fittt-reminders` v2, installed the active five-minute cron, and configured VAPID using encrypted Vault storage plus the public Railway variable. Scheduler authentication was verified with a real one-use nonce. A disposable subscription with a recent check-in produced `skipped: 1`, `sent: 0`, HTTP 200; normal scheduled jobs also completed successfully.
+Applied FITTT-only migration `fittt_push_reminders` (local file `20260913102003_fittt_push_reminders.sql`), deployed `fittt-reminders` v2, installed the active five-minute cron, and configured VAPID using encrypted Vault storage plus the public Railway variable. Scheduler authentication was verified with a real one-use nonce. A disposable subscription with a recent check-in produced `skipped: 1`, `sent: 0`, HTTP 200; normal scheduled jobs also completed successfully.
 
 Real Supabase tests passed for subscription creation, cross-user read/update denial, private-key RPC denial, job-table denial and rejection of private-network endpoints. Web Push request encryption was verified without transmitting it. Security advisors report only intentional RLS-with-no-client-policy information for worker-only FITTT tables and the pre-existing shared leaked-password warning; no new FITTT security warning. Performance flags the new unused subscription-owner index, which is retained for growth. Shared settings were preserved. Existing warning guidance: https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
 
