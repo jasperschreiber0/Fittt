@@ -1003,13 +1003,127 @@ button:hover:not(:disabled) {
     height: 29px;
   }
 }
-.weekly-intelligence { display: grid; gap: 18px; }
-.weekly-intelligence .card { margin-bottom: 0; }
-.recap-facts { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(0, 1.6fr); gap: 12px 20px; font-size: 15px; }
-.recap-facts dt { color: var(--muted); }
-.recap-facts dd { margin: 0; overflow-wrap: anywhere; }
-.next-week-plan li { margin: 12px 0; line-height: 1.6; }
-.next-week-plan ul { padding-left: 20px; }
-.event-plan { border-top: 1px solid #dfe5d7; margin-top: 20px; padding-top: 16px; }
-.daily-readout details, .weekly-intelligence details { margin-top: 16px; }
-@media(max-width: 500px) { .recap-facts { grid-template-columns: 1fr; gap: 4px; } .recap-facts dd { margin-bottom: 12px; } }
+.weekly-intelligence {
+  display: grid;
+  gap: 18px;
+}
+.weekly-intelligence .card {
+  margin-bottom: 0;
+}
+.recap-facts {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(0, 1.6fr);
+  gap: 12px 20px;
+  font-size: 15px;
+}
+.recap-facts dt {
+  color: var(--muted);
+}
+.recap-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.next-week-plan li {
+  margin: 12px 0;
+  line-height: 1.6;
+}
+.next-week-plan ul {
+  padding-left: 20px;
+}
+.event-plan {
+  border-top: 1px solid #dfe5d7;
+  margin-top: 20px;
+  padding-top: 16px;
+}
+.daily-readout details,
+.weekly-intelligence details {
+  margin-top: 16px;
+}
+@media (max-width: 500px) {
+  .recap-facts {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .recap-facts dd {
+    margin-bottom: 12px;
+  }
+}
+/* Keep the primary phone task above the navigation; details remain expandable. */
+.daily-readout {
+  scroll-margin-top: 16px;
+}
+.avatar {
+  min-width: 44px;
+  min-height: 44px;
+}
+summary {
+  min-height: 44px;
+}
+@media (max-width: 600px) {
+  header {
+    height: 64px;
+    padding: 0 18px;
+  }
+  main {
+    padding-top: 16px;
+  }
+  .today-subtitle {
+    display: none;
+  }
+  .page-title {
+    margin-bottom: 12px;
+  }
+  .page-title h1 {
+    font-size: 28px;
+    margin-bottom: 0;
+  }
+  .page-title .eyebrow {
+    margin-bottom: 6px;
+  }
+  .page-title .sun {
+    width: 28px;
+  }
+  .log-card {
+    padding: 16px;
+  }
+  .log-card h2 {
+    font-size: 20px;
+    margin-bottom: 8px;
+  }
+  .log-card > p {
+    margin: 0 0 12px;
+    font-size: 14px;
+  }
+  .voice-composer .voice {
+    min-height: 52px;
+    margin-bottom: 8px;
+  }
+  .capture-status {
+    min-height: 0;
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+  .draft-label {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  .voice-composer textarea {
+    min-height: 104px;
+    height: 104px;
+    font-size: 16px;
+  }
+  .log-card > .primary {
+    margin-top: 12px;
+  }
+  .next-week-plan li {
+    margin: 10px 0;
+    line-height: 1.4;
+  }
+  .next-week-plan .eyebrow {
+    margin-bottom: 8px;
+  }
+  body[data-keyboard="open"] nav {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}

@@ -10,6 +10,12 @@ import {
 const fmt = (v: number) => Math.round(v).toLocaleString();
 const range = (v: { low: number; high: number }) =>
   `${fmt(v.low)}–${fmt(v.high)}`;
+const shortDate = (day: string) =>
+  new Intl.DateTimeFormat("en-AU", {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  }).format(new Date(day + "T12:00:00Z"));
 export type SavedReview = {
   review_end: string;
   payload: Review;
@@ -31,13 +37,15 @@ export function DailyReadout({
   return (
     <section
       className="card daily-readout"
+      id="daily-result"
+      tabIndex={-1}
       aria-label="Today's intelligence"
       aria-live="polite"
     >
       <div className="eyebrow">
         TODAY · {d.sum.complete ? "FULL DAY LOGGED" : "SO FAR"}
       </div>
-      <h2>Here’s the picture.</h2>
+      <h2>Your day, saved.</h2>
       <p>
         <strong>
           {hasFood
@@ -110,16 +118,103 @@ export function WeeklyIntelligence({
   const plan = current ? buildReview(context, r.end).plan : r.plan;
   return (
     <div className="weekly-intelligence">
+      <section className="card next-week-plan">
+        <div className="eyebrow">
+          NEXT WEEK · {shortDate(plan.start)} — {shortDate(plan.end)}
+        </div>
+        <h2>What to do next.</h2>
+        <p>
+          Goal trajectory: <strong>{r.forecast.status}</strong> ·{" "}
+          {r.forecast.remaining} days remaining
+        </p>
+        <ul>
+          {plan.tips.map((t, i) => (
+            <li key={t}>
+              {i === 0 && t.startsWith("Average about")
+                ? `~${fmt(plan.calories)} kcal/day · regular meals`
+                : i === 1
+                  ? `~${plan.protein}g protein/day`
+                  : i === 2
+                    ? `${plan.trainingDays} training days${plan.trainingSplit ? ` · ${plan.trainingSplit.weights} weights + ${plan.trainingSplit.cardio} cardio` : " · rest days count"}`
+                    : i === 3
+                      ? plan.steps !== null
+                        ? `Around ${fmt(plan.steps)} steps/day · your usual baseline`
+                        : "Log steps when handy."
+                      : i === 4
+                        ? "Keep your social plans and regular meals."
+                        : t}
+            </li>
+          ))}
+        </ul>
+        <details>
+          <summary>Why this plan</summary>
+          <p className="small">
+            {plan.reason} Suggestions do not overwrite your personal targets.
+          </p>
+          <p className="small">{plan.tips.join(" ")}</p>
+        </details>
+        {plan.upcoming.length > 0 && (
+          <div className="event-plan">
+            <h3>Room for your plans</h3>
+            {plan.upcoming.map((e, i) => (
+              <p key={i}>
+                <strong>{e.name}</strong> · {shortDate(e.day)}
+              </p>
+            ))}
+            {plan.flexibility !== null && plan.flexibility > 0 ? (
+              <p>
+                Illustrative event-day range: {fmt(plan.calories)}–
+                {fmt(plan.eventDayHigh!)} kcal, with other days around{" "}
+                {fmt(plan.normalDayCalories)} kcal. This allocates up to{" "}
+                {fmt(plan.flexibility)} kcal above your usual day within the
+                weekly target range. It is not a drinking allowance or a promise
+                about weight.
+              </p>
+            ) : (
+              <p>
+                Keep regular meals around the event. We won’t invent a calorie
+                allowance without enough reliable information.
+              </p>
+            )}
+          </div>
+        )}
+        {r.forecast.projected !== null ? (
+          <details>
+            <summary>Your 90-day trajectory</summary>
+            <p>
+              At current pace:{" "}
+              <strong>{r.forecast.projected.toFixed(1)} kg</strong> (rough range{" "}
+              {r.forecast.low?.toFixed(1)}–{r.forecast.high?.toFixed(1)} kg)
+            </p>
+            <p>
+              Current rolling trend: {r.forecast.current?.toFixed(1)} kg ·
+              finish {r.forecast.finish}
+            </p>
+            <p>
+              Goal:{" "}
+              {r.forecast.goal !== null
+                ? `${r.forecast.goal} kg`
+                : "Set an optional goal weight in your profile"}
+              {r.forecast.gap !== null
+                ? ` · Projected gap: ${r.forecast.gap > 0 ? "+" : ""}${r.forecast.gap.toFixed(1)} kg`
+                : ""}
+            </p>
+            <p className="small">{r.forecast.reason}</p>
+          </details>
+        ) : (
+          <p className="small">{r.forecast.reason}</p>
+        )}
+      </section>
       <section className="card">
         <div className="eyebrow">SUNDAY RECAP · PRIVATE</div>
         <h2>Your week</h2>
         <p>
-          {r.start} — {r.end}
+          {shortDate(r.start)} — {shortDate(r.end)}
         </p>
         <p className="small">
           {saved
-            ? "Saved automatically. Refresh after correcting an older log."
-            : "Preview. Your recap is saved from Sunday morning, including when the app is closed."}
+            ? "Saved automatically on Sunday."
+            : "Preview · saved automatically from Sunday morning."}
         </p>
         {sorted.length > 1 && (
           <label className="field">
@@ -221,75 +316,6 @@ export function WeeklyIntelligence({
         <button className="text-button" disabled={busy} onClick={onRefresh}>
           {busy ? "Updating recap…" : "Refresh latest recap"}
         </button>
-      </section>
-      <section className="card next-week-plan">
-        <div className="eyebrow">
-          NEXT WEEK · {plan.start} — {plan.end}
-        </div>
-        <h2>What to do next.</h2>
-        <p>
-          Goal trajectory: <strong>{r.forecast.status}</strong> ·{" "}
-          {r.forecast.remaining} days remaining
-        </p>
-        <ul>
-          {plan.tips.map((t) => (
-            <li key={t}>{t}</li>
-          ))}
-        </ul>
-        <p className="small">
-          {plan.reason} Suggestions do not overwrite your personal targets.
-        </p>
-        {plan.upcoming.length > 0 && (
-          <div className="event-plan">
-            <h3>Room for your plans</h3>
-            {plan.upcoming.map((e, i) => (
-              <p key={i}>
-                <strong>{e.name}</strong> · {e.day}
-              </p>
-            ))}
-            {plan.flexibility !== null && plan.flexibility > 0 ? (
-              <p>
-                Illustrative event-day range: {fmt(plan.calories)}–
-                {fmt(plan.eventDayHigh!)} kcal, with other days around{" "}
-                {fmt(plan.normalDayCalories)} kcal. This allocates up to{" "}
-                {fmt(plan.flexibility)} kcal above your usual day within the
-                weekly target range. It is not a drinking allowance or a promise
-                about weight.
-              </p>
-            ) : (
-              <p>
-                Keep regular meals around the event. We won’t invent a calorie
-                allowance without enough reliable information.
-              </p>
-            )}
-          </div>
-        )}
-        {r.forecast.projected !== null ? (
-          <details>
-            <summary>Your 90-day trajectory</summary>
-            <p>
-              At current pace:{" "}
-              <strong>{r.forecast.projected.toFixed(1)} kg</strong> (rough range{" "}
-              {r.forecast.low?.toFixed(1)}–{r.forecast.high?.toFixed(1)} kg)
-            </p>
-            <p>
-              Current rolling trend: {r.forecast.current?.toFixed(1)} kg ·
-              finish {r.forecast.finish}
-            </p>
-            <p>
-              Goal:{" "}
-              {r.forecast.goal !== null
-                ? `${r.forecast.goal} kg`
-                : "Set an optional goal weight in your profile"}
-              {r.forecast.gap !== null
-                ? ` · Projected gap: ${r.forecast.gap > 0 ? "+" : ""}${r.forecast.gap.toFixed(1)} kg`
-                : ""}
-            </p>
-            <p className="small">{r.forecast.reason}</p>
-          </details>
-        ) : (
-          <p className="small">{r.forecast.reason}</p>
-        )}
       </section>
     </div>
   );

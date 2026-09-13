@@ -198,6 +198,34 @@ export default function Fittt() {
     setData({ ...empty, ...j });
   }
   useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const update = () => {
+      const editing = document.activeElement?.matches(
+        "textarea:not([readonly]), input:not([readonly])",
+      );
+      if (
+        editing &&
+        viewport.scale === 1 &&
+        window.innerHeight - viewport.height > 150
+      )
+        document.body.dataset.keyboard = "open";
+      else delete document.body.dataset.keyboard;
+    };
+    viewport.addEventListener("resize", update);
+    document.addEventListener("focusin", update);
+    const leaveField = () => {
+      delete document.body.dataset.keyboard;
+    };
+    document.addEventListener("focusout", leaveField);
+    return () => {
+      viewport.removeEventListener("resize", update);
+      document.removeEventListener("focusin", update);
+      document.removeEventListener("focusout", leaveField);
+      delete document.body.dataset.keyboard;
+    };
+  }, []);
+  useEffect(() => {
     if (!sent || data.user) return;
     const timer = window.setInterval(() => setAuthClock(Date.now()), 1000);
     return () => window.clearInterval(timer);
@@ -334,7 +362,12 @@ export default function Fittt() {
     setQuestion("");
     setText("");
     setClarified(false);
-    setNotice("Added to today. You can add more whenever you like.");
+    setNotice("Saved to today. Add more whenever you like.");
+    requestAnimationFrame(() => {
+      const result = document.getElementById("daily-result");
+      result?.focus({ preventScroll: true });
+      result?.scrollIntoView({ block: "start", behavior: "instant" });
+    });
   }
   async function showBoard(id: string) {
     setSelectedChallenge(id);
@@ -344,6 +377,9 @@ export default function Fittt() {
   function navigate(next: string) {
     setTab(next);
     setNotice("");
+    requestAnimationFrame(() =>
+      window.scrollTo({ top: 0, behavior: "instant" }),
+    );
     if (next === "Friends" && challenge)
       void run(() => showBoard(challenge.id));
     if (next === "Progress") analytics("progress_open");
@@ -552,20 +588,21 @@ export default function Fittt() {
                       )}
                     </div>
                     <h1>
-                      Hey {p.name}.<br />
-                      Let’s keep it simple.
+                      Hey {p.name}.
+                      <span className="today-subtitle">
+                        <br />
+                        Let’s keep it simple.
+                      </span>
                     </h1>
                   </div>
                   <Sun className="sun" size={46} strokeWidth={1.1} />
                 </div>
                 <section className="card log-card">
                   <div className="between">
-                    <h2>Just tell us about your day.</h2>
+                    <h2>Tell us about your day.</h2>
                     <span className="tag">YOUR DAILY CHECK-IN</span>
                   </div>
-                  <p>
-                    Meals, movement, a drink with mates. Tell it like it was.
-                  </p>
+                  <p>Food, drinks and movement. Rough is fine.</p>
                   <VoiceComposer
                     value={text}
                     disabled={busy}
@@ -985,7 +1022,7 @@ export default function Fittt() {
             {tab === "Progress" && (
               <>
                 <div className="eyebrow">ONE WEEK AT A TIME</div>
-                <h1>Keep showing up.</h1>
+                <h1>Your next week.</h1>
                 <WeeklyIntelligence
                   context={{
                     profile: p,

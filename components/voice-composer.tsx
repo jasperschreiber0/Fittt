@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Mic, Square, Keyboard } from "lucide-react";
+import { Mic, Square } from "lucide-react";
 
 type Recognition = {
   lang: string;
@@ -36,7 +36,7 @@ export function VoiceComposer({
     "idle" | "starting" | "listening" | "stopping"
   >("idle");
   const [message, setMessage] = useState(
-    "Speak naturally, or type below. You’ll review before saving.",
+    "Speak or type below. Review before saving.",
   );
   const recognition = useRef<Recognition | null>(null);
   const editor = useRef<HTMLTextAreaElement>(null);
@@ -210,15 +210,7 @@ export function VoiceComposer({
         <p className="small">
           Keep going. Tap Done talking when you’re ready to review.
         </p>
-      ) : (
-        <button
-          type="button"
-          className="text-button"
-          onClick={() => editor.current?.focus()}
-        >
-          <Keyboard size={17} /> Prefer to type? Tap here
-        </button>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -1,5 +1,11 @@
 # Production verification — 12 September 2026
 
+## Focused mobile polish — 13 September 2026
+
+Shortened the phone header and logging introduction, removed duplicate typing instructions, and kept voice/text/review controls above navigation at 320×740, 360×640 and 390×844. Saving focuses and scrolls to the saved daily result. Tab navigation resets scroll position so users start at the top of the chosen screen. Progress now presents concise next-week actions before the recap, with full reasoning expandable and safety guidance retained. Profile/expand controls have at least 44px touch height. Navigation clears a detected software keyboard and returns when it closes or focus leaves the field.
+
+Twelve targeted browser tests passed against the local production build, including new viewport/keyboard/save-feedback checks and existing login, calendar, voice, recap and profile regressions. Lint and production build/typechecking passed. Phone screenshots were inspected. Keyboard and voice checks simulate browser events; physical iPhone/Android verification and 7 pm push reminders remain separate unfinished work. No calculations, authentication rules, data or scheduler configuration changed.
+
 ## Daily intelligence and Sunday recap — 13 September 2026
 
 Added shared deterministic daily/weekly intelligence, reported-versus-estimated activity fields, compact Today feedback, a saved private Sunday recap and a next-seven-day plan with upcoming events. Optional goal weight is editable again. Forecasts require fresh sufficient weights; missing food days remain unknown, adjustments are bounded, and exercise expenditure never creates food credit. Sunday delivery uses a FITTT-only hourly pg_cron/pg_net job, an authenticated edge worker and one-use job nonces. The worker completed a scheduled-path test successfully; anonymous/forged requests were denied. No recap AI calls, email or push notifications.
