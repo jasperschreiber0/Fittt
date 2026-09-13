@@ -102,7 +102,9 @@ test("phone daily intelligence and Sunday plan keep estimates and missing days h
   const daily = page.getByRole("region", { name: "Today's intelligence" });
   await expect(daily).toContainText("2,450 kcal");
   await expect(daily).toContainText("9,200 steps reported");
-  await expect(daily).toContainText("Building the picture");
+  await expect(daily).toContainText("needs more weigh-ins");
+  await expect(daily).toContainText("1 of 3 training days this week");
+  await expect(daily).toContainText("45 minutes weights");
   await daily.scrollIntoViewIfNeeded();
   await page.screenshot({ path: "test-results/intelligence-daily-phone.png" });
   await page.getByRole("button", { name: "Progress", exact: true }).click();

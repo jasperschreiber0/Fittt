@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { sessionFailure } from "@/lib/session-diagnostics";
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
   if (
@@ -26,7 +27,12 @@ export async function proxy(request: NextRequest) {
       },
     },
   );
-  await supabase.auth.getClaims();
+  const hadCookie = request.cookies
+    .getAll()
+    .some((c) => /^sb-.*-auth-token(?:\.\d+)?$/.test(c.name));
+  const { error } = await supabase.auth.getClaims();
+  if (error && request.headers.get("x-fittt-returning") === "1")
+    console.warn("FITTT session renewal:", sessionFailure(error, hadCookie));
   return response;
 }
 export const config = {

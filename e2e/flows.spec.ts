@@ -74,7 +74,7 @@ test("three user onboarding, challenge, invite, logs, Gold, privacy, progress", 
       await expect(page.getByText("You’re in. Let’s do this.")).toBeVisible();
     }
     await page.getByRole("button", { name: "Today", exact: true }).click();
-    await page.getByRole("button", { name: /Short on time/ }).click();
+    await page.getByRole("button", { name: /Just want to check in/ }).click();
     await page.getByRole("button", { name: "Done", exact: true }).click();
     await page
       .getByRole("button", { name: "Save check-in", exact: true })

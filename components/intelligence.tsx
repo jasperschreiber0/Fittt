@@ -28,7 +28,8 @@ export function DailyReadout({
   context: Context;
   day: string;
 }) {
-  if (!context.entries.some((e) => e.day === day)) return null;
+  const checkin = context.days.find((d) => d.day === day)?.data;
+  if (!context.entries.some((e) => e.day === day) && !checkin) return null;
   const d = dailyIntelligence(context, day);
   const hasFood = context.entries.some(
     (e) =>
@@ -45,7 +46,12 @@ export function DailyReadout({
       <div className="eyebrow">
         TODAY · {d.sum.complete ? "FULL DAY LOGGED" : "SO FAR"}
       </div>
-      <h2>Your day, saved.</h2>
+      <h2>
+        <span className="saved-tick" aria-hidden="true">
+          ✓
+        </span>{" "}
+        Your day, saved.
+      </h2>
       <p>
         <strong>
           {hasFood
@@ -53,15 +59,32 @@ export function DailyReadout({
             : "Food and drinks: not logged yet"}
         </strong>
       </p>
-      <p>
-        {d.activity.training ? "✓ Training logged" : "Training: not reported"}
-        {d.steps !== null
-          ? ` · ${fmt(d.steps)} steps ${d.stepsBasis}`
-          : " · Steps: not reported"}
+      <p className="training-summary">
+        {d.activity.training
+          ? `✓ ${d.activity.descriptions.join(" · ") || "Training logged"}`
+          : checkin?.training === "done"
+            ? "✓ Training logged"
+            : checkin?.training === "rest"
+              ? "Rest day logged"
+              : "Training: add it by voice or text"}
       </p>
-      <p>
-        Goal trajectory: <strong>{d.forecast.status}</strong>
+      <p className="small training-progress">
+        <strong>
+          {d.trainingDays} of {context.profile.training} training days this week
+        </strong>
+        <span>Counts towards your weekly plan and Sunday review.</span>
       </p>
+      <p>{d.steps !== null ? `${fmt(d.steps)} steps ${d.stepsBasis}` : ""}</p>
+      {d.forecast.projected !== null ? (
+        <p>
+          Weight forecast: <strong>{d.forecast.status}</strong>
+        </p>
+      ) : (
+        <details className="forecast-help">
+          <summary>Weight forecast: {d.forecast.status.toLowerCase()}</summary>
+          <p className="small">{d.forecast.reason}</p>
+        </details>
+      )}
       <p className="small">{d.message}</p>
       <details>
         <summary>Estimates & reported details</summary>
@@ -124,9 +147,17 @@ export function WeeklyIntelligence({
         </div>
         <h2>What to do next.</h2>
         <p>
-          Goal trajectory: <strong>{r.forecast.status}</strong> ·{" "}
-          {r.forecast.remaining} days remaining
+          Weight forecast:{" "}
+          <strong>
+            {r.forecast.status === "Building the picture"
+              ? "Needs more weigh-ins"
+              : r.forecast.status}
+          </strong>{" "}
+          · {r.forecast.remaining} days remaining
         </p>
+        {r.forecast.projected === null && (
+          <p className="small">{r.forecast.reason}</p>
+        )}
         <ul>
           {plan.tips.map((t, i) => (
             <li key={t}>

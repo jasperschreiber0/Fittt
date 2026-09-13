@@ -115,9 +115,9 @@ export function forecast(c: Context, asOf: string) {
     gap: null as number | null,
     rate: null as number | null,
     goal: p.targetWeight,
-    status: "Building the picture",
+    status: "Needs more weigh-ins",
     reason:
-      "Add at least four private weights over two weeks, including one in the last seven days.",
+      "To estimate your finishing weight, add at least four weigh-ins across two weeks, including one in the last seven days. Your weights stay private.",
   };
   if (
     !first ||
@@ -173,9 +173,25 @@ export function dailyIntelligence(c: Context, day: string) {
     activity = activitySummary(entries, c.profile.weight);
   const stepsKnown = entries.some((e) => e.estimate.steps !== null);
   const highAlcohol = sum.drinks >= 10;
+  const weekStart = addDays(
+    day,
+    -((new Date(day + "T12:00:00Z").getUTCDay() + 6) % 7),
+  );
+  const trainingDays = Array.from(
+    { length: dayDiff(day, weekStart) + 1 },
+    (_, i) => addDays(weekStart, i),
+  ).filter(
+    (date) =>
+      activitySummary(
+        c.entries.filter((e) => e.day === date),
+        c.profile.weight,
+      ).training ||
+      c.days.some((d) => d.day === date && d.data.training === "done"),
+  ).length;
   return {
     sum,
     activity,
+    trainingDays,
     steps: stepsKnown ? sum.steps : null,
     stepsBasis: entries.some(
       (e) =>

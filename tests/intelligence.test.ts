@@ -79,6 +79,28 @@ const context = (): Context => ({
   events: [],
 });
 describe("daily and weekly intelligence", () => {
+  it("counts training once per day across voice and check-ins, resetting on Monday", () => {
+    const c = context();
+    const workout = entry("2026-09-12");
+    workout.estimate.exercise = ["Weights"];
+    c.entries = [
+      workout,
+      { ...workout, id: "second-workout" },
+      { ...workout, id: "last-week", day: "2026-09-06" },
+    ];
+    c.days = ["2026-09-11", "2026-09-12"].map((day) => ({
+      day,
+      data: {
+        food: "on",
+        training: "done",
+        alcohol: "none",
+        complete: true,
+        minimum: false,
+      },
+    }));
+    expect(dailyIntelligence(c, "2026-09-12").trainingDays).toBe(2);
+    expect(dailyIntelligence(c, "2026-09-14").trainingDays).toBe(0);
+  });
   it("uses seven completed local days, across DST and Sunday morning boundary", () => {
     expect(
       dueReviewEnd("Australia/Sydney", new Date("2026-09-12T19:59:00Z")),

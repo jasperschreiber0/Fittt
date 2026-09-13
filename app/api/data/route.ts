@@ -1,5 +1,7 @@
 import { db } from "@/lib/supabase";
 import { isAuthSessionMissingError } from "@supabase/supabase-js";
+import { cookies, headers as requestHeaders } from "next/headers";
+import { sessionFailure } from "@/lib/session-diagnostics";
 import {
   profileSchema,
   estimateSchema,
@@ -19,6 +21,16 @@ export async function GET() {
     error: authError,
   } = await s.auth.getUser();
   const headers = { "Cache-Control": "private, no-store" };
+  if (!user && (await requestHeaders()).get("x-fittt-returning") === "1") {
+    const hasCookie = (await cookies())
+      .getAll()
+      .some((c) => /^sb-.*-auth-token(?:\.\d+)?$/.test(c.name));
+    // Only a fixed category: never log cookies, IDs, email, URLs, or diary data.
+    console.warn(
+      "FITTT session restore:",
+      sessionFailure(authError, hasCookie),
+    );
+  }
   if (
     authError &&
     !isAuthSessionMissingError(authError) &&

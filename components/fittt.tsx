@@ -89,6 +89,20 @@ const initialFast: Fast = {
   complete: true,
   minimum: false,
 };
+function returningHeaders(): Record<string, string> {
+  try {
+    return localStorage.getItem("fittt-signed-in") === "1"
+      ? { "x-fittt-returning": "1" }
+      : {};
+  } catch {
+    return {};
+  }
+}
+function rememberSignIn() {
+  try {
+    localStorage.setItem("fittt-signed-in", "1");
+  } catch {}
+}
 async function api(body: unknown, path = "/api/data") {
   const r = await fetch(path, {
     method: "POST",
@@ -192,9 +206,13 @@ export default function Fittt() {
       : 0,
     days = weekDays(today);
   async function reload() {
-    const r = await fetch("/api/data", { cache: "no-store" });
+    const r = await fetch("/api/data", {
+      cache: "no-store",
+      headers: returningHeaders(),
+    });
     const j = await r.json();
     if (!r.ok) throw Error(j.error);
+    if (j.user) rememberSignIn();
     setData({ ...empty, ...j });
   }
   const [restoreFailed, setRestoreFailed] = useState(false);
@@ -239,6 +257,7 @@ export default function Fittt() {
         try {
           const r = await fetch("/api/data", {
             cache: "no-store",
+            headers: returningHeaders(),
             signal: AbortSignal.timeout(15000),
           });
           const j = await r.json();
@@ -256,6 +275,7 @@ export default function Fittt() {
       .then((j) => {
         if (cancelled) return;
         setRestoreFailed(false);
+        if (j.user) rememberSignIn();
         setData({ ...empty, ...j });
         setInvite(new URLSearchParams(location.search).get("invite") || "");
         if (new URLSearchParams(location.search).has("authError"))
@@ -690,6 +710,14 @@ export default function Fittt() {
                           .map((i) => i.name)
                           .join(" · ") || "Movement update"}
                       </p>
+                      {estimate.exercise.length > 0 && (
+                        <p className="training-summary">
+                          ✓ {estimate.exercise.join(" · ")}
+                        </p>
+                      )}
+                      {estimate.steps !== null && (
+                        <p>{fmt(estimate.steps)} steps</p>
+                      )}
                       <details>
                         <summary>More: nutrition & assumptions</summary>{" "}
                         <strong>
@@ -837,13 +865,13 @@ export default function Fittt() {
                       analytics("fast_start");
                     }}
                   >
-                    Short on time? Fast Mode <ChevronRight size={16} />
+                    Just want to check in? <ChevronRight size={16} />
                   </button>
                   {fastOpen && (
                     <div className="fast">
                       <p className="small">
-                        Your minimum day: regular meals, comfortable movement
-                        and an honest check-in. No bonus points needed.
+                        Three quick choices, then save. For food estimates and a
+                        more useful weekly plan, use voice or text above.
                       </p>
                       <Choices
                         label="Food"
@@ -906,8 +934,8 @@ export default function Fittt() {
                         Save check-in <Check size={18} />
                       </button>
                       <p className="small">
-                        Rest counts. More exercise earns no extra points. Fast
-                        Mode doesn’t invent calorie estimates.
+                        Saves your check-in without estimating calories. Rest
+                        days count too.
                       </p>
                     </div>
                   )}
@@ -1505,6 +1533,9 @@ export default function Fittt() {
                     onClick={() =>
                       void run(async () => {
                         await api({ action: "logout" }, "/api/auth");
+                        try {
+                          localStorage.removeItem("fittt-signed-in");
+                        } catch {}
                         setData(empty);
                       })
                     }

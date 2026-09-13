@@ -7,6 +7,59 @@
   --lime: #e4efa4;
   --gold: #e9cc75;
 }
+.saved-tick {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--lime);
+  font-size: 18px;
+  vertical-align: middle;
+}
+.card.daily-readout {
+  border-top: 3px solid #a6b969;
+  background: linear-gradient(145deg, #ffffff, #f4f7eb);
+}
+.training-progress {
+  padding: 12px 14px;
+  background: #eaf0df;
+  border-radius: 12px;
+}
+.training-progress strong,
+.training-progress span {
+  display: block;
+}
+.training-progress strong {
+  color: var(--ink);
+}
+.forecast-help summary {
+  font-size: 14px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  button {
+    transition:
+      background-color 160ms ease,
+      transform 160ms ease;
+  }
+  button:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .saved-tick {
+    animation: saved-arrive 240ms ease-out;
+  }
+  @keyframes saved-arrive {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}
 * {
   box-sizing: border-box;
 }

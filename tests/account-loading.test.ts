@@ -7,6 +7,7 @@ import {
 import { GET } from "../app/api/data/route";
 
 const getUser = vi.hoisted(() => vi.fn());
+vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 vi.mock("@/lib/supabase", () => ({ db: async () => ({ auth: { getUser } }) }));
 
 test("an unavailable auth service cannot masquerade as a signed-out account", async () => {
