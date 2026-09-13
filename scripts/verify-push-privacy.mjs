@@ -31,7 +31,7 @@ try {
     p256dh: ecdh.getPublicKey().toString("base64url"),
     auth: crypto.randomBytes(16).toString("base64url"),
   };
-  const vapid = JSON.parse(fs.readFileSync(".env.push.json", "utf8"));
+  const vapid = webpush.generateVAPIDKeys(); // Offline encryption test needs no production signing secret.
   const payload = JSON.stringify({ title: "FITTT", body: "Synthetic test" });
   const request = webpush.generateRequestDetails({ endpoint, keys }, payload, {
     vapidDetails: {
