@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { VoiceComposer } from "./voice-composer";
 import { EventCalendar } from "./event-calendar";
 import { BrowserNotice } from "./browser-notice";
+import { ReminderSettings } from "./reminder-settings";
 import {
   DailyReadout,
   WeeklyIntelligence,
@@ -1343,6 +1344,7 @@ export default function Fittt() {
               <>
                 <div className="eyebrow">MAKE IT YOURS</div>
                 <h1>More, when you need it.</h1>
+                <ReminderSettings />
                 <details className="more-section">
                   <summary>Private weight trend</summary>{" "}
                   <section className="card">
